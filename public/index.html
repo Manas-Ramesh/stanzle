@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stanzle - Poetry Game</title>
+    <link rel="stylesheet" href="css/styles.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <div class="header-content">
+                <div class="header-left">
+                    <h1 class="title">Stanzle</h1>
+                    <p class="subtitle">Express your creativity through poetry</p>
+                </div>
+                <div class="header-right">
+                    <div class="user-menu">
+                        <button class="user-btn" id="userMenuBtn">
+                            <i class="fas fa-user"></i>
+                            <span id="usernameDisplay">User</span>
+                            <i class="fas fa-chevron-down"></i>
+                        </button>
+                        <div class="user-dropdown" id="userDropdown">
+                            <div class="user-info">
+                                <div class="user-stats">
+                                    <div class="stat">
+                                        <span class="stat-label">Games Played:</span>
+                                        <span class="stat-value" id="gamesPlayed">0</span>
+                                    </div>
+                                    <div class="stat">
+                                        <span class="stat-label">Best Score:</span>
+                                        <span class="stat-value" id="bestScore">0</span>
+                                    </div>
+                                    <div class="stat">
+                                        <span class="stat-label">Today's Score:</span>
+                                        <span class="stat-value" id="dailyScore">-</span>
+                                    </div>
+                                    <div class="stat">
+                                        <span class="stat-label">Daily Status:</span>
+                                        <span class="stat-value" id="dailyStatus">Ready</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="dropdown-actions">
+                                <a href="/profile" class="dropdown-item" id="profileBtn">
+                                    <i class="fas fa-user-circle"></i>
+                                    Profile
+                                </a>
+                                <button class="dropdown-item" id="logoutBtn">
+                                    <i class="fas fa-sign-out-alt"></i>
+                                    Logout
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <main class="game-container">
+            <!-- Game Settings -->
+            <div class="settings-panel">
+                <div class="difficulty-selector">
+                    <h3>Difficulty</h3>
+                    <div class="toggle-group">
+                        <button class="toggle-btn active" data-mode="easy">Easy</button>
+                        <button class="toggle-btn" data-mode="hard">Hard</button>
+                    </div>
+                </div>
+
+                <div class="word-bank-toggle">
+                    <h3>Word Bank</h3>
+                    <label class="switch">
+                        <input type="checkbox" id="wordBankToggle">
+                        <span class="slider"></span>
+                    </label>
+                </div>
+            </div>
+
+            <!-- Easy Mode Selection -->
+            <div class="easy-mode-selection" id="easyModeSelection" style="display: none;">
+                <h3>Choose Your Focus</h3>
+                <div class="focus-options">
+                    <button class="focus-btn active" data-focus="theme">
+                        <i class="fas fa-palette"></i>
+                        Theme: <span id="easyThemeWord">Adventure</span>
+                    </button>
+                    <button class="focus-btn" data-focus="emotion">
+                        <i class="fas fa-heart"></i>
+                        Emotion: <span id="easyEmotionWord">Joy</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Daily Challenge Display -->
+            <div class="challenge-display" id="challengeDisplay">
+                <div class="theme-section">
+                    <h3>Today's Theme</h3>
+                    <div class="theme-word" id="themeWord">Adventure</div>
+                </div>
+                <div class="emotion-section">
+                    <h3>Today's Emotion</h3>
+                    <div class="emotion-word" id="emotionWord">Joy</div>
+                </div>
+            </div>
+
+            <!-- Word Bank Display -->
+            <div class="word-bank-display" id="wordBankDisplay" style="display: none;">
+                <h3>Required Words</h3>
+                <div class="word-list" id="wordList">
+                    <span class="word-item">mountain</span>
+                    <span class="word-item">journey</span>
+                    <span class="word-item">discover</span>
+                    <span class="word-item">freedom</span>
+                </div>
+            </div>
+
+            <!-- Poem Editor -->
+            <div class="poem-editor-container">
+                <div class="editor-toolbar">
+                    <!-- Basic Formatting -->
+                    <div class="toolbar-group">
+                        <button class="toolbar-btn" data-command="bold" title="Bold">
+                            <i class="fas fa-bold"></i>
+                        </button>
+                        <button class="toolbar-btn" data-command="italic" title="Italic">
+                            <i class="fas fa-italic"></i>
+                        </button>
+                        <button class="toolbar-btn" data-command="underline" title="Underline">
+                            <i class="fas fa-underline"></i>
+                        </button>
+                        <button class="toolbar-btn" data-command="strikeThrough" title="Strikethrough">
+                            <i class="fas fa-strikethrough"></i>
+                        </button>
+                    </div>
+                    
+                    <div class="separator"></div>
+                    
+                    <!-- Text Alignment -->
+                    <div class="toolbar-group">
+                        <button class="toolbar-btn" data-command="justifyLeft" title="Align Left">
+                            <i class="fas fa-align-left"></i>
+                        </button>
+                        <button class="toolbar-btn" data-command="justifyCenter" title="Align Center">
+                            <i class="fas fa-align-center"></i>
+                        </button>
+                        <button class="toolbar-btn" data-command="justifyRight" title="Align Right">
+                            <i class="fas fa-align-right"></i>
+                        </button>
+                        <button class="toolbar-btn" data-command="justifyFull" title="Justify">
+                            <i class="fas fa-align-justify"></i>
+                        </button>
+                    </div>
+                    
+                    <div class="separator"></div>
+                    
+                    <!-- Font Controls -->
+                    <div class="toolbar-group">
+                        <select class="font-family-select" id="fontFamily">
+                            <option value="Inter">Inter</option>
+                            <option value="Georgia">Georgia</option>
+                            <option value="Times New Roman">Times New Roman</option>
+                            <option value="Arial">Arial</option>
+                            <option value="Helvetica">Helvetica</option>
+                            <option value="Courier New">Courier New</option>
+                        </select>
+                        <select class="font-size-select" id="fontSize">
+                            <option value="12">12px</option>
+                            <option value="14">14px</option>
+                            <option value="16" selected>16px</option>
+                            <option value="18">18px</option>
+                            <option value="20">20px</option>
+                            <option value="24">24px</option>
+                            <option value="28">28px</option>
+                            <option value="32">32px</option>
+                        </select>
+                    </div>
+                    
+                    <div class="separator"></div>
+                    
+                    <!-- Text Colors -->
+                    <div class="toolbar-group">
+                        <input type="color" class="color-picker" id="textColor" title="Text Color" value="#000000">
+                        <input type="color" class="color-picker" id="backgroundColor" title="Background Color" value="#ffffff">
+                    </div>
+                    
+                    <div class="separator"></div>
+                    
+                    <!-- Advanced Features -->
+                    <div class="toolbar-group">
+                        <button class="toolbar-btn" data-command="undo" title="Undo">
+                            <i class="fas fa-undo"></i>
+                        </button>
+                        <button class="toolbar-btn" data-command="redo" title="Redo">
+                            <i class="fas fa-redo"></i>
+                        </button>
+                        <button class="toolbar-btn" id="findReplaceBtn" title="Find & Replace">
+                            <i class="fas fa-search"></i>
+                        </button>
+                        <button class="toolbar-btn" id="wordCountBtn" title="Word Count">
+                            <i class="fas fa-calculator"></i>
+                        </button>
+                    </div>
+                    
+                    <div class="separator"></div>
+                    
+                    <!-- Writing Tools -->
+                    <div class="toolbar-group">
+                        <button class="toolbar-btn" id="writingPromptsBtn" title="Writing Prompts">
+                            <i class="fas fa-lightbulb"></i>
+                        </button>
+                        <button class="toolbar-btn" id="rhymeHelperBtn" title="Rhyme Helper">
+                            <i class="fas fa-music"></i>
+                        </button>
+                        <button class="toolbar-btn" id="thesaurusBtn" title="Thesaurus">
+                            <i class="fas fa-book"></i>
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Find & Replace Modal -->
+                <div class="find-replace-modal" id="findReplaceModal" style="display: none;">
+                    <div class="modal-content">
+                        <h3>Find & Replace</h3>
+                        <div class="find-replace-controls">
+                            <input type="text" id="findText" placeholder="Find...">
+                            <input type="text" id="replaceText" placeholder="Replace with...">
+                            <button id="findBtn">Find</button>
+                            <button id="replaceBtn">Replace</button>
+                            <button id="replaceAllBtn">Replace All</button>
+                            <button id="closeFindReplace">Close</button>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Writing Stats -->
+                <div class="writing-stats" id="writingStats" style="display: none;">
+                    <div class="stats-content">
+                        <h3>Writing Statistics</h3>
+                        <div class="stats-grid">
+                            <div class="stat-item">
+                                <span class="stat-label">Words:</span>
+                                <span class="stat-value" id="wordCount">0</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-label">Characters:</span>
+                                <span class="stat-value" id="charCount">0</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-label">Lines:</span>
+                                <span class="stat-value" id="lineCount">0</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-label">Reading Time:</span>
+                                <span class="stat-value" id="readingTime">0 min</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="poem-editor" id="poemEditor" contenteditable="true" placeholder="Write your poem here..."></div>
+                
+                <!-- Writing Prompts -->
+                <div class="writing-prompts" id="writingPrompts" style="display: none;">
+                    <h3>Writing Prompts</h3>
+                    <div class="prompts-grid">
+                        <div class="prompt-category">
+                            <h4>Imagery Prompts</h4>
+                            <ul>
+                                <li>Describe a sunset using only colors</li>
+                                <li>Write about the sound of rain</li>
+                                <li>Capture the feeling of wind</li>
+                            </ul>
+                        </div>
+                        <div class="prompt-category">
+                            <h4>Emotion Prompts</h4>
+                            <ul>
+                                <li>Write about joy without using the word "happy"</li>
+                                <li>Describe sadness through nature</li>
+                                <li>Express love through everyday objects</li>
+                            </ul>
+                        </div>
+                        <div class="prompt-category">
+                            <h4>Structure Prompts</h4>
+                            <ul>
+                                <li>Write a poem with only questions</li>
+                                <li>Create a poem using only one-syllable words</li>
+                                <li>Write a poem that reads the same backwards</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Submit Button -->
+            <div class="submit-section">
+                <button class="submit-btn" id="submitBtn" disabled>
+                    <i class="fas fa-paper-plane"></i>
+                    Submit Poem
+                </button>
+                <div class="word-bank-status" id="wordBankStatus"></div>
+            </div>
+
+            <!-- Results Display -->
+            <div class="results-container" id="resultsContainer" style="display: none;">
+                <h3>Your Score</h3>
+                <div class="score-breakdown">
+                    <div class="score-item" id="themeScoreItem">
+                        <span class="score-label">Theme Match:</span>
+                        <span class="score-value" id="themeScore">0/40</span>
+                    </div>
+                    <div class="score-item" id="emotionScoreItem">
+                        <span class="score-label">Emotion Match:</span>
+                        <span class="score-value" id="emotionScore">0/40</span>
+                    </div>
+                    <div class="score-item">
+                        <span class="score-label">Creativity:</span>
+                        <span class="score-value" id="creativityScore">0/20</span>
+                    </div>
+                    <div class="score-item total">
+                        <span class="score-label">Total:</span>
+                        <span class="score-value" id="totalScore">0/100</span>
+                    </div>
+                </div>
+                <div class="ai-feedback" id="aiFeedback"></div>
+            </div>
+        </main>
+    </div>
+
+    <script src="js/game.js"></script>
+</body>
+</html>

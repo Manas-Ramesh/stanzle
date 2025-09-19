@@ -1,0 +1,19 @@
+{
+  "name": "stanzle-game",
+  "version": "1.0.0",
+  "description": "A creative poetry game where players write poems based on themes and emotions",
+  "main": "index.html",
+  "scripts": {
+    "start": "python3 -m http.server 8000",
+    "dev": "python3 -m http.server 8000"
+  },
+  "keywords": ["poetry", "game", "creativity", "ai", "openai"],
+  "author": "Your Name",
+  "license": "MIT",
+  "dependencies": {
+    "openai": "^4.0.0"
+  },
+  "devDependencies": {
+    "http-server": "^14.1.1"
+  }
+}

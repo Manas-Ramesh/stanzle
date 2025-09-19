@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Your Games - Stanzle</title>
+    <link rel="stylesheet" href="/css/styles.css">
+    <link rel="stylesheet" href="/css/profile.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+    <div class="profile-container">
+        <!-- Header -->
+        <div class="profile-header">
+            <div class="header-left">
+                <a href="/" class="back-btn">
+                    <i class="fas fa-arrow-left"></i>
+                </a>
+                <div class="header-content">
+                    <h1>Your Games</h1>
+                    <p>View your daily poetry journey</p>
+                </div>
+            </div>
+            <div class="header-right">
+                <div class="user-menu">
+                    <button class="user-btn" id="userMenuBtn">
+                        <i class="fas fa-user"></i>
+                        <span id="usernameDisplay">User</span>
+                        <i class="fas fa-chevron-down"></i>
+                    </button>
+                    <div class="user-dropdown" id="userDropdown">
+                        <div class="user-info">
+                            <div class="user-stats">
+                                <div class="stat">
+                                    <span class="stat-label">Games Played:</span>
+                                    <span class="stat-value" id="gamesPlayed">0</span>
+                                </div>
+                                <div class="stat">
+                                    <span class="stat-label">Best Score:</span>
+                                    <span class="stat-value" id="bestScore">0</span>
+                                </div>
+                                <div class="stat">
+                                    <span class="stat-label">Total Score:</span>
+                                    <span class="stat-value" id="totalScore">0</span>
+                                </div>
+                                <div class="stat">
+                                    <span class="stat-label">Today's Score:</span>
+                                    <span class="stat-value" id="dailyScore">-</span>
+                                </div>
+                                <div class="stat">
+                                    <span class="stat-label">Daily Status:</span>
+                                    <span class="stat-value" id="dailyStatus">Ready</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="user-actions">
+                            <button class="action-btn" id="profileBtn">
+                                <i class="fas fa-user-circle"></i>
+                                Profile
+                            </button>
+                            <button class="action-btn" id="logoutBtn">
+                                <i class="fas fa-sign-out-alt"></i>
+                                Logout
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Loading State -->
+        <div class="loading-container" id="loadingContainer">
+            <div class="loading-spinner"></div>
+            <p>Loading your poetry journey...</p>
+        </div>
+
+        <!-- Empty State -->
+        <div class="empty-state" id="emptyState" style="display: none;">
+            <div class="empty-icon">
+                <i class="fas fa-feather-alt"></i>
+            </div>
+            <h2>No Games Yet</h2>
+            <p>Start your poetry journey with today's daily challenge!</p>
+            <a href="/" class="start-btn">
+                <i class="fas fa-play"></i>
+                Start Playing
+            </a>
+        </div>
+
+        <!-- Games List -->
+        <div class="games-list" id="gamesList" style="display: none;">
+            <!-- Games will be dynamically inserted here -->
+        </div>
+    </div>
+
+    <!-- Individual Game Detail Modal -->
+    <div class="game-detail-modal" id="gameDetailModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="modalTitle">Game Details</h2>
+                <button class="close-btn" id="closeModalBtn">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body" id="modalBody">
+                <!-- Game details will be inserted here -->
+            </div>
+        </div>
+    </div>
+
+    <script src="/js/profile.js"></script>
+</body>
+</html>

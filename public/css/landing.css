@@ -1,0 +1,622 @@
+/* Landing Page Styles - Wordle Inspired */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Helvetica Neue', Arial, sans-serif;
+    background-color: #f8f9fa;
+    color: #333;
+    line-height: 1.6;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.container {
+    text-align: center;
+    max-width: 500px;
+    width: 100%;
+    padding: 20px;
+}
+
+/* Game Icon */
+.game-icon {
+    margin-bottom: 30px;
+}
+
+.poem-grid {
+    display: inline-block;
+    background: white;
+    border-radius: 8px;
+    padding: 20px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.poem-line {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 8px;
+}
+
+.poem-line:last-child {
+    margin-bottom: 0;
+}
+
+.word-tile {
+    width: 80px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    font-size: 12px;
+    border-radius: 4px;
+    border: 2px solid #333;
+    color: white;
+    text-align: center;
+    line-height: 1.2;
+}
+
+.word-tile.theme-match {
+    background-color: #6aaa64; /* Green */
+}
+
+.word-tile.emotion-match {
+    background-color: #c9b458; /* Yellow */
+}
+
+.word-tile.neutral {
+    background-color: #787c7e; /* Gray */
+}
+
+/* Title */
+.game-title {
+    font-size: 3.5rem;
+    font-weight: bold;
+    color: #333;
+    margin-bottom: 20px;
+    letter-spacing: 2px;
+}
+
+/* Game Description */
+.game-description {
+    margin-bottom: 40px;
+    font-size: 1.2rem;
+    color: #666;
+    line-height: 1.4;
+}
+
+.game-description p {
+    margin-bottom: 5px;
+}
+
+/* Action Buttons */
+.action-buttons {
+    display: flex;
+    gap: 15px;
+    justify-content: center;
+    margin-bottom: 50px;
+    flex-wrap: wrap;
+}
+
+.btn {
+    padding: 12px 24px;
+    border: none;
+    border-radius: 8px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 120px;
+    justify-content: center;
+}
+
+.btn-primary {
+    background-color: #333;
+    color: white;
+}
+
+.btn-primary:hover {
+    background-color: #555;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.btn-full {
+    width: 100%;
+    justify-content: center;
+}
+
+.btn-social {
+    width: 100%;
+    background: white;
+    border: 1px solid #ddd;
+    color: #333;
+    font-weight: 500;
+    justify-content: flex-start;
+    padding: 12px 16px;
+}
+
+.btn-social:hover {
+    background-color: #f8f9fa;
+    border-color: #ccc;
+}
+
+.btn-google {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.google-icon {
+    flex-shrink: 0;
+}
+
+/* Modal Styles */
+.modal {
+    display: none;
+    position: fixed;
+    z-index: 1000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(5px);
+    overflow-y: auto;
+    padding: 20px;
+}
+
+.modal-content {
+    background-color: white;
+    margin: 20px auto;
+    padding: 0;
+    border-radius: 12px;
+    width: 90%;
+    max-width: 400px;
+    max-height: 90vh;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+    animation: modalSlideIn 0.3s ease-out;
+    overflow-y: auto;
+}
+
+@keyframes modalSlideIn {
+    from {
+        opacity: 0;
+        transform: translateY(-50px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.modal-header {
+    padding: 25px 30px 20px;
+    border-bottom: 1px solid #e9ecef;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.modal-header h2 {
+    margin: 0;
+    color: #333;
+    font-size: 1.5rem;
+}
+
+.close-btn {
+    background: none;
+    border: none;
+    font-size: 1.5rem;
+    cursor: pointer;
+    color: #666;
+    padding: 0;
+    width: 30px;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    transition: all 0.2s ease;
+}
+
+.close-btn:hover {
+    background-color: #f8f9fa;
+    color: #333;
+}
+
+.modal-body {
+    padding: 30px;
+    overflow-y: auto;
+    max-height: calc(90vh - 60px);
+}
+
+/* Form Styles */
+.form-group {
+    margin-bottom: 20px;
+    text-align: center;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 600;
+    color: #333;
+    text-align: center;
+}
+
+.form-group input {
+    width: 100%;
+    padding: 12px 16px;
+    border: 2px solid #e9ecef;
+    border-radius: 8px;
+    font-size: 1rem;
+    transition: border-color 0.3s ease;
+    text-align: center;
+}
+
+.form-group input:focus {
+    outline: none;
+    border-color: #333;
+    box-shadow: 0 0 0 3px rgba(51, 51, 51, 0.1);
+}
+
+.form-actions {
+    display: flex;
+    gap: 12px;
+    margin-top: 25px;
+    flex-wrap: wrap;
+    justify-content: center;
+}
+
+.form-actions .btn {
+    flex: 1;
+    min-width: 120px;
+}
+
+/* Divider */
+.divider {
+    position: relative;
+    text-align: center;
+    margin: 20px 0;
+}
+
+.divider::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background-color: #e9ecef;
+}
+
+.divider span {
+    background: white;
+    padding: 0 15px;
+    color: #666;
+    font-size: 0.9rem;
+}
+
+/* Social Login */
+.social-login {
+    margin-bottom: 20px;
+    text-align: center;
+}
+
+/* Auth Toggle Link */
+.auth-toggle-link {
+    margin-top: 20px;
+    text-align: center;
+}
+
+/* Terms */
+.terms {
+    margin-top: 20px;
+    text-align: center;
+}
+
+.terms p {
+    font-size: 0.85rem;
+    color: #666;
+    line-height: 1.4;
+}
+
+.terms-link {
+    color: #333;
+    text-decoration: underline;
+}
+
+.terms-link:hover {
+    color: #555;
+}
+
+/* Traditional Auth Toggle */
+.auth-toggle {
+    display: flex;
+    margin-bottom: 20px;
+    border: 1px solid #e9ecef;
+    border-radius: 8px;
+    overflow: hidden;
+    justify-content: center;
+}
+
+/* Traditional Auth Section */
+.traditional-auth {
+    text-align: center;
+}
+
+.toggle-btn {
+    flex: 1;
+    padding: 12px;
+    background: white;
+    border: none;
+    cursor: pointer;
+    font-weight: 500;
+    transition: all 0.2s ease;
+}
+
+.toggle-btn.active {
+    background: #333;
+    color: white;
+}
+
+.toggle-btn:not(.active):hover {
+    background: #f8f9fa;
+}
+
+/* Auth Switch */
+.auth-switch {
+    margin-top: 20px;
+    text-align: center;
+}
+
+.link-btn {
+    background: none;
+    border: none;
+    color: #666;
+    text-decoration: underline;
+    cursor: pointer;
+    font-size: 0.9rem;
+}
+
+.link-btn:hover {
+    color: #333;
+}
+
+/* Game Info */
+.game-info {
+    color: #666;
+    font-size: 0.9rem;
+    line-height: 1.4;
+}
+
+.game-info p {
+    margin-bottom: 3px;
+}
+
+/* Responsive Design */
+@media (max-width: 600px) {
+    .container {
+        padding: 15px;
+    }
+    
+    .game-title {
+        font-size: 2.5rem;
+    }
+    
+    .action-buttons {
+        flex-direction: column;
+        align-items: center;
+    }
+    
+    .btn {
+        width: 100%;
+        max-width: 200px;
+    }
+    
+    .word-tile {
+        width: 60px;
+        height: 30px;
+        font-size: 10px;
+    }
+    
+    .poem-grid {
+        padding: 15px;
+    }
+    
+    .modal-content {
+        margin: 10% auto;
+        width: 95%;
+    }
+    
+    .modal-body {
+        padding: 20px;
+    }
+    
+    .form-actions {
+        flex-direction: column;
+    }
+    
+    .form-actions .btn {
+        width: 100%;
+    }
+}
+
+/* Modal Responsive Design */
+@media (max-width: 768px) {
+    .modal {
+        padding: 10px;
+    }
+    
+    .modal-content {
+        width: 95%;
+        margin: 10px auto;
+        max-height: 95vh;
+    }
+}
+
+@media (max-height: 600px) {
+    .modal-content {
+        max-height: 95vh;
+        margin: 10px auto;
+    }
+    
+    .modal-body {
+        padding: 20px;
+    }
+}
+
+/* Loading States */
+.btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.btn.loading {
+    position: relative;
+    color: transparent;
+}
+
+.btn.loading::after {
+    content: '';
+    position: absolute;
+    width: 16px;
+    height: 16px;
+    top: 50%;
+    left: 50%;
+    margin-left: -8px;
+    margin-top: -8px;
+    border: 2px solid transparent;
+    border-top-color: currentColor;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Error Messages */
+.error-message {
+    color: #dc3545;
+    font-size: 0.9rem;
+    margin-top: 5px;
+    display: none;
+}
+
+.form-group.error input {
+    border-color: #dc3545;
+}
+
+.form-group.error .error-message {
+    display: block;
+}
+
+/* Success Messages */
+.success-message {
+    color: #28a745;
+    font-size: 0.9rem;
+    margin-top: 5px;
+    display: none;
+}
+
+.form-group.success .success-message {
+    display: block;
+}
+
+/* Poetic Header Styles */
+.poetic-header {
+    position: relative;
+    margin-bottom: 3rem;
+    text-align: center;
+}
+
+.floating-words {
+    position: relative;
+    height: 120px;
+    margin-bottom: 2rem;
+}
+
+.word-float {
+    position: absolute;
+    font-size: 1.4rem;
+    font-weight: 500;
+    opacity: 0.9;
+    animation: float 6s ease-in-out infinite;
+    cursor: default;
+    user-select: none;
+    text-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.word-float.word-1 {
+    top: 20px;
+    left: 20%;
+    animation-delay: 0s;
+    color: #8b5cf6;
+}
+
+.word-float.word-2 {
+    top: 40px;
+    right: 25%;
+    animation-delay: 1.5s;
+    color: #f43f5e;
+}
+
+.word-float.word-3 {
+    top: 60px;
+    left: 30%;
+    animation-delay: 3s;
+    color: #10b981;
+}
+
+.word-float.word-4 {
+    top: 80px;
+    right: 20%;
+    animation-delay: 4.5s;
+    color: #f59e0b;
+}
+
+@keyframes float {
+    0%, 100% { transform: translateY(0px) rotate(0deg) scale(1); }
+    25% { transform: translateY(-15px) rotate(2deg) scale(1.05); }
+    50% { transform: translateY(-8px) rotate(-1deg) scale(1.02); }
+    75% { transform: translateY(-20px) rotate(1deg) scale(1.08); }
+}
+
+.subtitle {
+    margin-top: 1rem;
+}
+
+.poetic-line {
+    display: block;
+    font-size: 1.3rem;
+    color: #4b5563;
+    font-weight: 400;
+    line-height: 1.6;
+    font-style: italic;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.05);
+}
+
+.poetic-date {
+    font-size: 1rem;
+    color: #6b7280;
+    margin-bottom: 0.5rem;
+    font-weight: 400;
+}
+
+.poetic-tagline {
+    font-size: 0.95rem;
+    color: #9ca3af;
+    font-style: italic;
+    font-weight: 400;
+}
