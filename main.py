@@ -66,6 +66,8 @@ def index():
     token = request.cookies.get('authToken')
     print(f"🔍 Auth check - Token: {token[:20] if token else 'None'}...")
     print(f"🔍 All cookies: {request.cookies}")
+    print(f"🔍 Request URL: {request.url}")
+    print(f"🔍 Request headers: {dict(request.headers)}")
     
     if not token:
         print("🔍 No token found, serving landing page")
@@ -73,6 +75,8 @@ def index():
     
     user = auth_service.verify_token(token)
     print(f"🔍 User verification result: {user is not None}")
+    if user:
+        print(f"🔍 User data: {user}")
     
     if not user:
         print("🔍 Token verification failed, serving landing page")
@@ -348,7 +352,9 @@ def setup_google_user():
         })
         
         # Set the cookie
-        response.set_cookie('authToken', session_token, max_age=7*24*60*60, path='/', secure=False, httponly=False)
+        # Use secure=True for HTTPS in production, secure=False for localhost
+        is_production = os.getenv('GOOGLE_REDIRECT_URI', '').startswith('https://')
+        response.set_cookie('authToken', session_token, max_age=7*24*60*60, path='/', secure=is_production, httponly=False)
         print(f"🔍 Google user setup: Set cookie and returning response")
         
         return response
@@ -433,7 +439,9 @@ def google_callback():
             
             # Set cookie and redirect to main page
             response = redirect('/')
-            response.set_cookie('authToken', session_token, max_age=7*24*60*60, path='/', secure=False, httponly=False)
+            # Use secure=True for HTTPS in production, secure=False for localhost
+            is_production = os.getenv('GOOGLE_REDIRECT_URI', '').startswith('https://')
+            response.set_cookie('authToken', session_token, max_age=7*24*60*60, path='/', secure=is_production, httponly=False)
             print(f"🔍 Google OAuth: Set cookie and redirecting to /")
             return response
         else:
