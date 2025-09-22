@@ -383,6 +383,8 @@ def score_poem():
     """Score poem based on criteria"""
     try:
         data = request.get_json()
+        print(f"🔍 Score API - Request data: {data}")  # Debug logging
+        
         if not validate_poem_data(data):
             return jsonify({'error': 'Invalid poem data'}), 400
         
@@ -394,6 +396,8 @@ def score_poem():
             difficulty=data.get('difficulty', 'easy'),
             focus=data.get('focus')
         )
+        
+        print(f"🔍 Score API - Result: {result}")  # Debug logging
         
         return jsonify({
             'success': True,
@@ -439,15 +443,22 @@ def submit_daily_score():
     """Submit daily score"""
     try:
         token = request.headers.get('Authorization', '').replace('Bearer ', '')
+        print(f"🔍 Daily submit - Token: {token[:20] if token else 'None'}...")
+        
         user_data = auth_service.verify_token(token)
+        print(f"🔍 Daily submit - User data: {user_data is not None}")
         
         if not user_data:
             return jsonify({'success': False, 'error': 'Invalid token'}), 401
         
         data = request.get_json()
+        print(f"🔍 Daily submit - Request data: {data}")
+        
         score = data.get('score')
+        print(f"🔍 Daily submit - Score: {score} (type: {type(score)})")
         
         if score is None or not isinstance(score, (int, float)):
+            print(f"🔍 Daily submit - Score validation failed: {score} is not valid")
             return jsonify({'success': False, 'error': 'Invalid score'}), 400
         
         username = user_data['username']

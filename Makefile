@@ -23,7 +23,7 @@ install:
 # Development server
 dev:
 	@echo "Starting development server..."
-	. venv/bin/activate && python src/backend/app.py
+	. venv/bin/activate && python3 src/backend/app.py
 
 # Run tests
 test:
@@ -45,7 +45,7 @@ clean:
 # Build for production
 build: clean
 	@echo "Building for production..."
-	. venv/bin/activate && python -m pip install --upgrade pip
+	. venv/bin/activate && python3 -m pip install --upgrade pip
 	. venv/bin/activate && pip install -r requirements.txt
 	@echo "Build complete!"
 

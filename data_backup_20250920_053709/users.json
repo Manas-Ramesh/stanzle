@@ -1,0 +1,127 @@
+{
+  "manasr": {
+    "username": "manasr",
+    "email": "unrecoe@gmail.com",
+    "password_hash": "43077528a7af9c441ef551b678434652:5cb734507764d1ffdb2f7b6ea2b66520200041a5b03c66670713340ee358283c",
+    "created_at": "2025-09-20T02:44:16.844702",
+    "last_login": "2025-09-20T02:48:29.240593",
+    "games_played": 1,
+    "total_score": 17,
+    "best_score": 17,
+    "daily_scores": {
+      "2025-09-20": {
+        "score": 17,
+        "submitted": true
+      }
+    },
+    "submission_history": {
+      "2025-09-20": {
+        "date": "2025-09-20",
+        "score": 17,
+        "mode": "hard",
+        "easy_selection": null,
+        "word_bank_used": true,
+        "theme": "Adventure",
+        "emotion": "Nostalgia",
+        "required_words": [
+          "bathe",
+          "jiu",
+          "settled",
+          "gag"
+        ],
+        "poem_text": "bathe, jiu, settled, gag",
+        "poem_html": "bathe, jiu, settled, gag",
+        "ai_guess": {
+          "confidence": 0.75,
+          "emotion": "Confusion",
+          "theme": "Surrealism"
+        },
+        "submitted_at": "2025-09-20T03:16:45.348780"
+      }
+    },
+    "last_daily_submission": "2025-09-20"
+  },
+  "newtest": {
+    "username": "newtest",
+    "email": "manas.ramesh24@gmail.com",
+    "password_hash": "95fa8ceff29557001a9d4b812f59eef0:d0003b2adefa0a731a45175757a342a7b76fdcf5eb6616f042ab1ccf62568097",
+    "created_at": "2025-09-20T04:50:40.728644",
+    "last_login": "2025-09-20T04:50:45.769807",
+    "games_played": 1,
+    "total_score": 37,
+    "best_score": 37,
+    "daily_scores": {
+      "2025-09-20": {
+        "score": 37,
+        "submitted": true
+      }
+    },
+    "submission_history": {
+      "2025-09-20": {
+        "date": "2025-09-20",
+        "score": 37,
+        "mode": "hard",
+        "easy_selection": null,
+        "word_bank_used": true,
+        "theme": "Adventure",
+        "emotion": "Nostalgia",
+        "required_words": [
+          "bathe",
+          "jiu",
+          "settled",
+          "gag"
+        ],
+        "poem_text": "Sometimes I bathe and think of the jiu that settled.Its the gag reflex of my brain to think of that.\u00a0Because it seems so crazy that I feel brought back to the past\u00a0by the tumultuous mountains.",
+        "poem_html": "Sometimes I bathe and think of the jiu that settled.<div>Its the gag reflex of my brain to think of that.&nbsp;</div><div>Because it seems so crazy that I feel brought back to the past&nbsp;</div><div>by the tumultuous mountains.</div>",
+        "ai_guess": {
+          "confidence": 0.9,
+          "emotion": "Melancholy",
+          "theme": "Memory and nostalgia"
+        },
+        "submitted_at": "2025-09-20T04:51:42.368519"
+      }
+    },
+    "last_daily_submission": "2025-09-20"
+  },
+  "manasram": {
+    "username": "manasram",
+    "email": "mr4426@columbia.edu",
+    "password_hash": "d0c7eb8ad1194c185493a09abe3d1a69:59b1713dfa5221bce6df2fdada9620a8e0dfab01e3b3a775f455e7d7029ba176",
+    "created_at": "2025-09-20T05:33:36.486757",
+    "last_login": "2025-09-20T05:33:48.007728",
+    "games_played": 1,
+    "total_score": 0,
+    "best_score": 0,
+    "daily_scores": {
+      "2025-09-20": {
+        "score": 0,
+        "submitted": true
+      }
+    },
+    "submission_history": {
+      "2025-09-20": {
+        "date": "2025-09-20",
+        "score": 0,
+        "mode": "easy",
+        "easy_selection": null,
+        "word_bank_used": true,
+        "theme": "Adventure",
+        "emotion": "Nostalgia",
+        "required_words": [
+          "bathe",
+          "jiu",
+          "settled",
+          "gag"
+        ],
+        "poem_text": "i bathe in jiu settled gag",
+        "poem_html": "i bathe in jiu settled gag",
+        "ai_guess": {
+          "null": "Joy",
+          "confidence": 0.5
+        },
+        "submitted_at": "2025-09-20T05:34:07.863659"
+      }
+    },
+    "last_daily_submission": "2025-09-20"
+  }
+}

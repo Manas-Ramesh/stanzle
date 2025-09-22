@@ -105,7 +105,7 @@ class OpenAIService:
                 "themeScore": 0-80,
                 "creativityScore": 0-20,
                 "feedback": "detailed feedback about the poem",
-                "totalScore": "sum of all scores"
+                "totalScore": "themeScore + creativityScore"
             }}
             
             Poem:
@@ -133,7 +133,7 @@ class OpenAIService:
                 "emotionScore": 0-80,
                 "creativityScore": 0-20,
                 "feedback": "detailed feedback about the poem",
-                "totalScore": "sum of all scores"
+                "totalScore": "emotionScore + creativityScore"
             }}
             
             Poem:
@@ -171,7 +171,7 @@ class OpenAIService:
             "emotionScore": 0-40,
             "creativityScore": 0-20,
             "feedback": "detailed feedback about the poem",
-            "totalScore": "sum of all scores"
+            "totalScore": "themeScore + emotionScore + creativityScore"
         }}
         
         Poem:
@@ -199,7 +199,54 @@ class OpenAIService:
             if not content or content.strip() == "":
                 raise Exception("OpenAI returned empty response")
             
-            return json.loads(content)
+            # Clean up the content - remove markdown code blocks if present
+            cleaned_content = content.strip()
+            if cleaned_content.startswith('```json'):
+                cleaned_content = cleaned_content[7:]  # Remove ```json
+            if cleaned_content.startswith('```'):
+                cleaned_content = cleaned_content[3:]  # Remove ```
+            if cleaned_content.endswith('```'):
+                cleaned_content = cleaned_content[:-3]  # Remove trailing ```
+            cleaned_content = cleaned_content.strip()
+            
+            print(f"🔍 Cleaned content: {cleaned_content}")  # Debug logging
+            
+            result = json.loads(cleaned_content)
+            print(f"🔍 Raw OpenAI result: {result}")  # Debug logging
+            
+            # Validate and cap scores to prevent exceeding maximums
+            if 'creativityScore' in result:
+                result['creativityScore'] = min(result['creativityScore'], 20)
+            if 'themeScore' in result:
+                result['themeScore'] = min(result['themeScore'], 80 if 'emotionScore' not in result else 40)
+            if 'emotionScore' in result:
+                result['emotionScore'] = min(result['emotionScore'], 80 if 'themeScore' not in result else 40)
+            
+            print(f"🔍 After validation: {result}")  # Debug logging
+            
+            # Ensure all scores are numbers, not strings
+            if 'themeScore' in result:
+                result['themeScore'] = int(result['themeScore'])
+            if 'emotionScore' in result:
+                result['emotionScore'] = int(result['emotionScore'])
+            if 'creativityScore' in result:
+                result['creativityScore'] = int(result['creativityScore'])
+            
+            # Calculate total score if not provided or incorrect
+            # Always recalculate total score to ensure accuracy
+            total = 0
+            if 'themeScore' in result and result['themeScore'] is not None:
+                total += result['themeScore']
+            if 'emotionScore' in result and result['emotionScore'] is not None:
+                total += result['emotionScore']
+            if 'creativityScore' in result and result['creativityScore'] is not None:
+                total += result['creativityScore']
+            result['totalScore'] = total
+            print(f"🔍 Calculated total score: {total}")  # Debug logging
+            
+            print(f"🔍 Final result: {result}")  # Debug logging
+            
+            return result
         except json.JSONDecodeError as e:
             print(f"JSON Decode Error: {e}")
             print(f"Raw response: {content}")

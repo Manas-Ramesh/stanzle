@@ -12,59 +12,48 @@
     <div class="profile-container">
         <!-- Header -->
         <div class="profile-header">
-            <div class="header-left">
-                <a href="/" class="back-btn">
-                    <i class="fas fa-arrow-left"></i>
-                </a>
-                <div class="header-content">
-                    <h1>Your Games</h1>
-                    <p>View your daily poetry journey</p>
-                </div>
+            <div class="header-content">
+                <h1>Your Games</h1>
+                <p>Daily poetry writing challenges and progress</p>
             </div>
-            <div class="header-right">
-                <div class="user-menu">
-                    <button class="user-btn" id="userMenuBtn">
-                        <i class="fas fa-user"></i>
-                        <span id="usernameDisplay">User</span>
-                        <i class="fas fa-chevron-down"></i>
-                    </button>
-                    <div class="user-dropdown" id="userDropdown">
-                        <div class="user-info">
-                            <div class="user-stats">
-                                <div class="stat">
-                                    <span class="stat-label">Games Played:</span>
-                                    <span class="stat-value" id="gamesPlayed">0</span>
-                                </div>
-                                <div class="stat">
-                                    <span class="stat-label">Best Score:</span>
-                                    <span class="stat-value" id="bestScore">0</span>
-                                </div>
-                                <div class="stat">
-                                    <span class="stat-label">Total Score:</span>
-                                    <span class="stat-value" id="totalScore">0</span>
-                                </div>
-                                <div class="stat">
-                                    <span class="stat-label">Today's Score:</span>
-                                    <span class="stat-value" id="dailyScore">-</span>
-                                </div>
-                                <div class="stat">
-                                    <span class="stat-label">Daily Status:</span>
-                                    <span class="stat-value" id="dailyStatus">Ready</span>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="user-actions">
-                            <button class="action-btn" id="profileBtn">
-                                <i class="fas fa-user-circle"></i>
-                                Profile
-                            </button>
-                            <button class="action-btn" id="logoutBtn">
-                                <i class="fas fa-sign-out-alt"></i>
-                                Logout
-                            </button>
-                        </div>
+            
+            <div class="header-actions">
+                <div class="user-initial" id="userInitial">M</div>
+                <button class="more-btn" id="userMenuBtn">
+                    <i class="fas fa-ellipsis-h"></i>
+                </button>
+                <div class="user-dropdown" id="userDropdown">
+                    <div class="dropdown-actions">
+                        <a href="/profile" class="dropdown-item" id="profileBtn">
+                            <i class="fas fa-user-circle"></i>
+                            Profile
+                        </a>
+                        <button class="dropdown-item" id="logoutBtn">
+                            <i class="fas fa-sign-out-alt"></i>
+                            Logout
+                        </button>
                     </div>
                 </div>
+            </div>
+        </div>
+
+        <!-- Stats Overview -->
+        <div class="stats-grid" id="statsGrid">
+            <div class="stat-card">
+                <div class="stat-number" id="completedGames">0</div>
+                <div class="stat-label">Completed</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="dayStreak">1</div>
+                <div class="stat-label">Day Streak</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="avgScore">17</div>
+                <div class="stat-label">Avg Score</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="totalWords">4</div>
+                <div class="stat-label">Total Words</div>
             </div>
         </div>
 
@@ -89,7 +78,22 @@
 
         <!-- Games List -->
         <div class="games-list" id="gamesList" style="display: none;">
-            <!-- Games will be dynamically inserted here -->
+            <!-- Game entries will be dynamically inserted here -->
+        </div>
+
+        <!-- Load More Button -->
+        <div class="load-more-container">
+            <button class="load-more-btn" id="loadMoreBtn">
+                Load More Games
+            </button>
+        </div>
+
+        <!-- Unlimited Mode Button -->
+        <div class="unlimited-mode-container">
+            <a href="/unlimited" class="unlimited-mode-btn">
+                <i class="fas fa-infinity"></i>
+                Practice with Unlimited Mode
+            </a>
         </div>
     </div>
 

@@ -92,21 +92,87 @@ class ProfilePage {
 
         // Update username display
         const usernameDisplay = document.getElementById('usernameDisplay');
+        const userInitial = document.getElementById('userInitial');
         if (usernameDisplay) {
             usernameDisplay.textContent = this.user.username;
         }
-
-        // Update user stats
-        const gamesPlayed = document.getElementById('gamesPlayed');
-        const bestScore = document.getElementById('bestScore');
-        const totalScore = document.getElementById('totalScore');
-
-        if (gamesPlayed) gamesPlayed.textContent = this.user.games_played || 0;
-        if (bestScore) bestScore.textContent = this.user.best_score || 0;
-        if (totalScore) totalScore.textContent = this.user.total_score || 0;
+        if (userInitial) {
+            userInitial.textContent = (this.user.username || 'U').charAt(0).toUpperCase();
+        }
 
         // Update daily status
         this.loadDailyScoreInfo();
+    }
+
+    updateStats() {
+        const completedGames = this.submissions.filter(sub => sub.score > 0).length;
+        const dayStreak = this.calculateDayStreak();
+        const avgScore = this.calculateAvgScore();
+        const totalWords = this.calculateTotalWords();
+
+        // Debug logging to see actual values
+        console.log('Stats calculation:', {
+            submissions: this.submissions,
+            completedGames,
+            dayStreak,
+            avgScore,
+            totalWords
+        });
+
+        const completedGamesEl = document.getElementById('completedGames');
+        const dayStreakEl = document.getElementById('dayStreak');
+        const avgScoreEl = document.getElementById('avgScore');
+        const totalWordsEl = document.getElementById('totalWords');
+
+        // Update with correct values based on actual data
+        if (completedGamesEl) completedGamesEl.textContent = completedGames;
+        if (dayStreakEl) dayStreakEl.textContent = dayStreak;
+        if (avgScoreEl) avgScoreEl.textContent = Math.round(avgScore);
+        if (totalWordsEl) totalWordsEl.textContent = totalWords;
+    }
+
+    calculateDayStreak() {
+        if (this.submissions.length === 0) return 0;
+        
+        const sortedSubmissions = this.submissions
+            .filter(sub => sub.score > 0)
+            .sort((a, b) => new Date(b.date) - new Date(a.date));
+        
+        if (sortedSubmissions.length === 0) return 0;
+        
+        let streak = 1;
+        let currentDate = new Date(sortedSubmissions[0].date);
+        
+        for (let i = 1; i < sortedSubmissions.length; i++) {
+            const submissionDate = new Date(sortedSubmissions[i].date);
+            const dayDiff = Math.floor((currentDate - submissionDate) / (1000 * 60 * 60 * 24));
+            
+            if (dayDiff === 1) {
+                streak++;
+                currentDate = submissionDate;
+            } else {
+                break;
+            }
+        }
+        
+        return streak;
+    }
+
+    calculateAvgScore() {
+        const scoredSubmissions = this.submissions.filter(sub => sub.score > 0);
+        if (scoredSubmissions.length === 0) return 0;
+        
+        const totalScore = scoredSubmissions.reduce((sum, sub) => sum + sub.score, 0);
+        return Math.round(totalScore / scoredSubmissions.length);
+    }
+
+    calculateTotalWords() {
+        return this.submissions.reduce((total, sub) => {
+            if (sub.poem_text) {
+                return total + sub.poem_text.split(' ').length;
+            }
+            return total;
+        }, 0);
     }
 
     async loadDailyScoreInfo() {
@@ -164,6 +230,8 @@ class ProfilePage {
             if (result.success) {
                 this.submissions = Object.values(result.submissions);
                 this.renderGames();
+                // Update stats after loading submissions
+                this.updateStats();
             } else {
                 console.error('Failed to load submissions:', result.message);
                 this.showEmptyState();
@@ -208,34 +276,61 @@ class ProfilePage {
             year: 'numeric' 
         });
 
-        const scoreClass = this.getScoreClass(submission.score);
-        const poemPreview = submission.poem_text.substring(0, 150) + (submission.poem_text.length > 150 ? '...' : '');
+        const poemPreview = submission.poem_text ? submission.poem_text.substring(0, 150) + (submission.poem_text.length > 150 ? '...' : '') : 'No poem submitted';
+        const wordCount = submission.poem_text ? submission.poem_text.split(' ').length : 0;
+        
+        // Debug logging to see submission data
+        console.log('Submission data for game card:', submission);
+        
+        // Determine status and styling
+        const status = submission.score > 0 ? 'completed' : 'in-progress';
+        const statusClass = submission.score > 0 ? 'score-completed' : 'score-in-progress';
+        const statusBadge = submission.score > 0 ? 'Complete' : 'In Progress';
+        const statusBadgeClass = submission.score > 0 ? 'status-completed' : 'status-in-progress';
 
         return `
             <div class="game-card" onclick="profilePage.showGameDetail('${submission.date}')">
                 <div class="game-header">
-                    <div class="game-date">
-                        <i class="fas fa-calendar"></i>
-                        <span>${formattedDate}</span>
+                    <div class="game-info">
+                        <div class="game-date">
+                            <i class="fas fa-calendar"></i>
+                            <span>${formattedDate}</span>
+                        </div>
+                        
+                        <div class="game-score ${statusClass}">
+                            <i class="fas fa-trophy"></i>
+                            <span>${submission.score}/100</span>
+                        </div>
+
+                        <span class="status-badge ${statusBadgeClass}">${statusBadge}</span>
                     </div>
-                    <div class="game-score ${scoreClass}">
-                        <i class="fas fa-trophy"></i>
-                        <span>${submission.score}/100</span>
-                    </div>
+
+                    <button class="arrow-btn">
+                        <i class="fas fa-arrow-right"></i>
+                    </button>
                 </div>
                 
-                <div class="game-tags">
-                    <span class="tag tag-${submission.mode}">${submission.mode}</span>
-                    ${submission.mode === 'easy' && submission.easy_selection ? 
-                        `<span class="tag tag-${submission.easy_selection}">${submission.easy_selection}</span>` : 
-                        `<span class="tag tag-theme">Theme: ${submission.theme}</span>
-                         <span class="tag tag-emotion">Emotion: ${submission.emotion}</span>`
-                    }
-                    ${submission.word_bank_used ? '<span class="tag tag-wordbank">Word Bank</span>' : ''}
+                <div class="game-details">
+                    <div class="game-detail">
+                        <span class="game-detail-label">Form:</span> <strong>${submission.difficulty || submission.mode || 'Easy'}</strong>
+                    </div>
+                    <div class="game-detail">
+                        <span class="game-detail-label">Theme:</span> <strong>${submission.theme || 'Unknown'}</strong>
+                    </div>
+                    <div class="game-detail">
+                        <span class="game-detail-label">Emotion:</span> <strong>${submission.emotion || 'Unknown'}</strong>
+                    </div>
                 </div>
-                
+
                 <div class="poem-preview">
-                    ${poemPreview}
+                    "${poemPreview}"
+                </div>
+
+                <div class="game-meta">
+                    <div class="word-count">
+                        <i class="fas fa-clock"></i>
+                        <span>${wordCount} words</span>
+                    </div>
                 </div>
             </div>
         `;
@@ -278,45 +373,54 @@ class ProfilePage {
         modalTitle.textContent = `${formattedDate} - ${submission.score}/100`;
 
         modalBody.innerHTML = `
-            <div class="detail-section">
-                <h3><i class="fas fa-cog"></i> Game Settings</h3>
-                <div class="game-tags">
-                    <span class="tag tag-${submission.mode}">${submission.mode} - ${submission.mode === 'easy' ? 
-                        (submission.easy_selection === 'theme' ? 'Theme Only' : 'Emotion Only') : 
-                        'Theme AND Emotion'
-                    }</span>
-                    ${submission.word_bank_used ? '<span class="tag tag-wordbank">Word Bank Challenge</span>' : ''}
+            <div class="modal-section">
+                <div class="section-header">
+                    <i class="fas fa-cog section-icon"></i>
+                    <h3 class="section-title">Game Settings</h3>
+                </div>
+                <div class="game-settings-tags">
+                    <span class="setting-tag tag-hard">${submission.difficulty || submission.mode || 'hard'} - Theme AND Emotion</span>
+                    ${submission.required_words ? '<span class="setting-tag tag-wordbank">Word Bank Challenge</span>' : ''}
                 </div>
             </div>
 
-            <div class="detail-section">
-                <h3><i class="fas fa-puzzle-piece"></i> Prompts Used</h3>
-                <div class="challenge-cards">
-                    <div class="challenge-card theme">
-                        <h4>Theme</h4>
-                        <div class="value">${submission.theme}</div>
+            <div class="modal-section">
+                <div class="section-header">
+                    <i class="fas fa-puzzle-piece section-icon"></i>
+                    <h3 class="section-title">Prompts Used</h3>
+                </div>
+                <div class="prompts-section">
+                    <div class="prompt-item">
+                        <div class="prompt-label">Theme</div>
+                        <div class="prompt-value">${submission.theme || 'Unknown'}</div>
                     </div>
-                    <div class="challenge-card emotion">
-                        <h4>Emotion</h4>
-                        <div class="value">${submission.emotion}</div>
+                    <div class="prompt-item">
+                        <div class="prompt-label">Emotion</div>
+                        <div class="prompt-value">${submission.emotion || 'Unknown'}</div>
                     </div>
                 </div>
             </div>
 
             ${submission.required_words && submission.required_words.length > 0 ? `
-                <div class="detail-section">
-                    <h3><i class="fas fa-list"></i> Required Words</h3>
-                    <div class="words-grid">
-                        ${submission.required_words.map(word => 
-                            `<div class="word-item">${word}</div>`
-                        ).join('')}
+                <div class="modal-section">
+                    <div class="section-header">
+                        <span class="section-icon">≡</span>
+                        <h3 class="section-title">Required Words</h3>
+                    </div>
+                    <div class="required-words">
+                        ${submission.required_words.map(word => `
+                            <div class="word-tag">${word}</div>
+                        `).join('')}
                     </div>
                 </div>
             ` : ''}
 
-            <div class="detail-section">
-                <h3><i class="fas fa-feather-alt"></i> Your Poem</h3>
-                <div class="poem-content">${submission.poem_text}</div>
+            <div class="modal-section">
+                <div class="section-header">
+                    <i class="fas fa-edit section-icon"></i>
+                    <h3 class="section-title">Your Poem</h3>
+                </div>
+                <div class="poem-content" style="white-space: pre-wrap; font-family: inherit; line-height: 1.6;">${submission.poem_text || 'No poem submitted'}</div>
             </div>
         `;
 

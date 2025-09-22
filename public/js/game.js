@@ -1,7 +1,7 @@
 class StanzleGame {
     constructor() {
         this.currentMode = 'easy';
-        this.selectedFocus = 'theme'; // 'theme' or 'emotion' for easy mode
+        this.selectedFocus = 'emotion'; // 'theme' or 'emotion' for easy mode - default to emotion
         this.wordBankEnabled = false;
         this.currentTheme = 'Adventure';
         this.currentEmotion = 'Joy';
@@ -95,12 +95,28 @@ class StanzleGame {
             });
         });
 
+        // Set default emotion button as active
+        const emotionBtn = document.querySelector('.focus-btn[data-focus="emotion"]');
+        if (emotionBtn) {
+            emotionBtn.classList.add('active');
+        }
+
         // Focus selection for easy mode
         this.focusButtons.forEach(btn => {
             btn.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                
+                // Remove active from all buttons
                 this.focusButtons.forEach(b => b.classList.remove('active'));
-                e.target.classList.add('active');
-                this.selectedFocus = e.target.dataset.focus;
+                
+                // Add active to clicked button
+                btn.classList.add('active');
+                
+                // Set the selected focus
+                this.selectedFocus = btn.dataset.focus;
+                
+                console.log('Focus selected:', this.selectedFocus);
                 this.updateSubmitButton();
             });
         });
@@ -110,7 +126,10 @@ class StanzleGame {
         const emotionSection = document.querySelector('.emotion-section');
         
         if (themeSection) {
-            themeSection.addEventListener('click', () => {
+            themeSection.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                
                 if (this.currentMode === 'easy') {
                     // Remove selection from emotion section
                     emotionSection.classList.remove('selected');
@@ -123,13 +142,17 @@ class StanzleGame {
                     const themeBtn = document.querySelector('.focus-btn[data-focus="theme"]');
                     if (themeBtn) themeBtn.classList.add('active');
                     
+                    console.log('Theme selected via section click');
                     this.updateSubmitButton();
                 }
             });
         }
         
         if (emotionSection) {
-            emotionSection.addEventListener('click', () => {
+            emotionSection.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                
                 if (this.currentMode === 'easy') {
                     // Remove selection from theme section
                     themeSection.classList.remove('selected');
@@ -142,6 +165,7 @@ class StanzleGame {
                     const emotionBtn = document.querySelector('.focus-btn[data-focus="emotion"]');
                     if (emotionBtn) emotionBtn.classList.add('active');
                     
+                    console.log('Emotion selected via section click');
                     this.updateSubmitButton();
                 }
             });
@@ -256,21 +280,26 @@ class StanzleGame {
 
     updateModeDisplay() {
         if (this.currentMode === 'easy') {
-            this.easyModeSelection.style.display = 'none';
-            this.challengeDisplay.style.display = 'flex';
-            this.easyThemeWord.textContent = this.currentTheme;
-            this.easyEmotionWord.textContent = this.currentEmotion;
+            // Show easy mode selection (theme/emotion choice)
+            this.easyModeSelection.style.display = 'block';
+            this.challengeDisplay.style.display = 'none';
             
-            // Clear any previous selections
+            // Clear any previous selections and reset focus
             document.querySelector('.theme-section')?.classList.remove('selected');
             document.querySelector('.emotion-section')?.classList.remove('selected');
+            this.selectedFocus = null; // Reset focus selection - user MUST choose
+            
+            // Update submit button to be disabled until selection is made
+            this.updateSubmitButton();
         } else {
+            // Hide easy mode selection, show challenge display (uses both theme and emotion)
             this.easyModeSelection.style.display = 'none';
             this.challengeDisplay.style.display = 'flex';
             
             // Clear any previous selections
             document.querySelector('.theme-section')?.classList.remove('selected');
             document.querySelector('.emotion-section')?.classList.remove('selected');
+            this.selectedFocus = 'both'; // Hard mode uses both
         }
     }
 
@@ -621,6 +650,11 @@ class StanzleGame {
         const hasContent = poemText.length > 0;
         let canSubmit = hasContent;
 
+        // In easy mode, require focus selection (theme or emotion)
+        if (this.currentMode === 'easy' && !this.selectedFocus) {
+            canSubmit = false;
+        }
+
         // Auto-sync required words in unlimited mode before checking
         if (this.isUnlimitedMode && this.wordBankEnabled) {
             const uiWords = Array.from(this.wordList.children).map(el => el.textContent);
@@ -864,11 +898,18 @@ class StanzleGame {
 
     async calculateScores(guess, poemContent) {
         try {
+            // Clean the ai_guess object to remove any contamination
+            const cleanGuess = {
+                theme: guess.theme,
+                emotion: guess.emotion,
+                confidence: guess.confidence
+            };
+            
             const requestData = {
                     poem: poemContent,
                     intended_theme: this.currentTheme,
                     intended_emotion: this.currentEmotion,
-                    ai_guess: guess,
+                    ai_guess: cleanGuess,
                 difficulty: this.currentMode
             };
             
@@ -984,18 +1025,49 @@ class StanzleGame {
             if (this.selectedFocus === 'theme') {
                 themeScoreItem.style.display = 'flex';
                 emotionScoreItem.style.display = 'none';
-                document.getElementById('themeScore').textContent = `${scores.themeScore || 0}/80`;
-                document.getElementById('emotionScore').textContent = `0/80`;
+                if (this.isUnlimitedMode) {
+                    document.getElementById('unlimitedThemeScore').textContent = `${scores.themeScore || 0}/80`;
+                    document.getElementById('unlimitedEmotionScore').textContent = `0/80`;
+                } else {
+                    document.getElementById('themeScore').textContent = `${scores.themeScore || 0}/80`;
+                    document.getElementById('emotionScore').textContent = `0/80`;
+                }
             } else {
                 themeScoreItem.style.display = 'none';
                 emotionScoreItem.style.display = 'flex';
-                document.getElementById('themeScore').textContent = `0/80`;
-                document.getElementById('emotionScore').textContent = `${scores.emotionScore || 0}/80`;
+                if (this.isUnlimitedMode) {
+                    document.getElementById('unlimitedThemeScore').textContent = `0/80`;
+                    document.getElementById('unlimitedEmotionScore').textContent = `${scores.emotionScore || 0}/80`;
+                } else {
+                    document.getElementById('themeScore').textContent = `0/80`;
+                    document.getElementById('emotionScore').textContent = `${scores.emotionScore || 0}/80`;
+                }
             }
             
-            const totalScore = scores.totalScore || ((scores.themeScore || scores.emotionScore || 0) + scores.creativityScore);
-            document.getElementById('creativityScore').textContent = `${scores.creativityScore}/20`;
-            document.getElementById('totalScore').textContent = `${totalScore}/100`;
+            // For easy mode, only one score is used based on selected focus
+            const focusScore = this.selectedFocus === 'theme' ? (scores.themeScore || 0) : (scores.emotionScore || 0);
+            const creativityScore = scores.creativityScore || 0;
+            const totalScore = (scores.totalScore !== undefined && scores.totalScore !== null) ? scores.totalScore : (focusScore + creativityScore);
+            
+            console.log('🎭 Easy mode scoring:', {
+                focusScore,
+                creativityScore,
+                totalScore,
+                scores,
+                totalScoreType: typeof scores.totalScore,
+                totalScoreValue: scores.totalScore
+            });
+            
+            // Use different IDs for unlimited mode vs daily mode
+            if (this.isUnlimitedMode) {
+                document.getElementById('unlimitedCreativityScore').textContent = `${creativityScore}/20`;
+                document.getElementById('unlimitedTotalScore').textContent = `${totalScore}/100`;
+                console.log('🔧 SETTING UNLIMITED EASY MODE TOTAL SCORE TO:', `${totalScore}/100`);
+            } else {
+                document.getElementById('creativityScore').textContent = `${creativityScore}/20`;
+                document.getElementById('totalScore').textContent = `${totalScore}/100`;
+                console.log('🔧 SETTING DAILY EASY MODE TOTAL SCORE TO:', `${totalScore}/100`);
+            }
             
             document.getElementById('aiFeedback').innerHTML = `
                 <strong>AI Analysis:</strong><br>
@@ -1010,12 +1082,36 @@ class StanzleGame {
             themeScoreItem.style.display = 'flex';
             emotionScoreItem.style.display = 'flex';
             
-            const totalScore = scores.totalScore || (scores.themeScore + scores.emotionScore + scores.creativityScore);
+            const themeScore = scores.themeScore || 0;
+            const emotionScore = scores.emotionScore || 0;
+            const creativityScore = scores.creativityScore || 0;
+            const totalScore = (scores.totalScore !== undefined && scores.totalScore !== null) ? scores.totalScore : (themeScore + emotionScore + creativityScore);
             
-            document.getElementById('themeScore').textContent = `${scores.themeScore}/40`;
-            document.getElementById('emotionScore').textContent = `${scores.emotionScore}/40`;
-            document.getElementById('creativityScore').textContent = `${scores.creativityScore}/20`;
-            document.getElementById('totalScore').textContent = `${totalScore}/100`;
+            console.log('🔧 FIXED TOTAL SCORE CALCULATION:', totalScore);
+            console.log('🎭 Hard mode scoring:', {
+                themeScore,
+                emotionScore,
+                creativityScore,
+                totalScore,
+                scores,
+                totalScoreType: typeof scores.totalScore,
+                totalScoreValue: scores.totalScore
+            });
+            
+            // Use different IDs for unlimited mode vs daily mode
+            if (this.isUnlimitedMode) {
+                document.getElementById('unlimitedThemeScore').textContent = `${themeScore}/40`;
+                document.getElementById('unlimitedEmotionScore').textContent = `${emotionScore}/40`;
+                document.getElementById('unlimitedCreativityScore').textContent = `${creativityScore}/20`;
+                document.getElementById('unlimitedTotalScore').textContent = `${totalScore}/100`;
+                console.log('🔧 SETTING UNLIMITED HTML TOTAL SCORE TO:', `${totalScore}/100`);
+            } else {
+                document.getElementById('themeScore').textContent = `${themeScore}/40`;
+                document.getElementById('emotionScore').textContent = `${emotionScore}/40`;
+                document.getElementById('creativityScore').textContent = `${creativityScore}/20`;
+                document.getElementById('totalScore').textContent = `${totalScore}/100`;
+                console.log('🔧 SETTING DAILY HTML TOTAL SCORE TO:', `${totalScore}/100`);
+            }
             
             document.getElementById('aiFeedback').innerHTML = `
                 <strong>AI Analysis:</strong><br>
@@ -1105,8 +1201,7 @@ class StanzleGame {
 
         document.getElementById('unlimitedRetryBtn').addEventListener('click', () => {
             if (this.isUnlimitedMode) {
-                // Generate new challenge for unlimited mode
-                this.generateDailyChallenge();
+                // Keep the same challenge for unlimited mode retry
                 this.resetForRetry();
             } else {
                 window.location.href = '/unlimited.html';
@@ -1446,6 +1541,13 @@ class StanzleGame {
                 Object.assign(requestBody, submissionData);
             }
 
+            console.log('🔍 Submitting daily score:', {
+                score: score,
+                submissionData: submissionData,
+                requestBody: requestBody,
+                token: token ? token.substring(0, 20) + '...' : 'None'
+            });
+
             const response = await fetch('/api/daily/submit', {
                 method: 'POST',
                 headers: {
@@ -1457,6 +1559,12 @@ class StanzleGame {
 
             const result = await response.json();
             
+            console.log('🔍 Daily submit response:', {
+                status: response.status,
+                statusText: response.statusText,
+                result: result
+            });
+            
             if (result.success) {
                 console.log('Daily score submitted successfully:', result);
                 // Update local user stats
@@ -1467,11 +1575,12 @@ class StanzleGame {
                     this.updateUserDisplay();
                 }
             } else {
-                console.error('Failed to submit daily score:', result.message);
-                alert(result.message);
+                console.error('Failed to submit daily score:', result.message || result.error);
+                alert(result.message || result.error || 'Failed to submit daily score');
             }
         } catch (error) {
             console.error('Error submitting daily score:', error);
+            alert('Error submitting daily score: ' + error.message);
         }
     }
 

@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Stanzle - Poetry Game</title>
-    <link rel="stylesheet" href="css/styles.css">
+    <link rel="stylesheet" href="css/styles.css?v=2">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
 </head>
@@ -13,8 +13,13 @@
         <header class="header">
             <div class="header-content">
                 <div class="header-left">
-                    <h1 class="title">Stanzle</h1>
-                    <p class="subtitle">Express your creativity through poetry</p>
+                    <div class="logo">
+                        <i class="fas fa-feather-alt"></i>
+                    </div>
+                    <div>
+                        <h1 class="title">Stanzle</h1>
+                        <p class="subtitle">Express your creativity through poetry</p>
+                    </div>
                 </div>
                 <div class="header-right">
                     <div class="user-menu">
@@ -60,7 +65,8 @@
             </div>
         </header>
 
-        <main class="game-container">
+        <div class="main-card">
+            <main class="game-container">
             <!-- Game Settings -->
             <div class="settings-panel">
                 <div class="difficulty-selector">
@@ -327,7 +333,8 @@
                 </div>
                 <div class="ai-feedback" id="aiFeedback"></div>
             </div>
-        </main>
+            </main>
+        </div>
     </div>
 
     <script src="js/game.js"></script>

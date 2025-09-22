@@ -3,38 +3,65 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Stanzle - Poetry Challenge Game</title>
+    <title>Stanzle - Daily Poetry Game</title>
     <link rel="stylesheet" href="css/landing.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 </head>
 <body>
     <div class="container">
-        <!-- Poetic Header -->
-        <div class="poetic-header">
-            <div class="floating-words">
-                <span class="word-float word-1">dreams</span>
-                <span class="word-float word-2">hope</span>
-                <span class="word-float word-3">love</span>
-                <span class="word-float word-4">journey</span>
+        <!-- Header with Logo and Title -->
+        <div class="header">
+            <div class="logo">
+                <div class="logo-icon">
+                    <i class="fas fa-feather-alt"></i>
+                </div>
+            </div>
+            <h1 class="title">Stanzle</h1>
+        </div>
+
+        <!-- Description -->
+        <div class="description">
+            <p class="description-line">The daily poetry game that challenges your creativity. Express yourself through words and see how AI interprets your art.</p>
+        </div>
+
+        <!-- Feature Cards -->
+        <div class="features">
+            <div class="feature-card">
+                <div class="feature-icon">
+                    <i class="fas fa-sparkles"></i>
+                </div>
+                <h3 class="feature-title">Daily Themes</h3>
+                <p class="feature-description">New creative prompts every day.</p>
             </div>
             
-            <h1 class="game-title">Stanzle</h1>
-            <div class="subtitle">
-                <span class="poetic-line">Where words dance</span>
-                <span class="poetic-line">with emotion</span>
+            <div class="feature-card">
+                <div class="feature-icon">
+                    <i class="fas fa-trophy"></i>
+                </div>
+                <h3 class="feature-title">AI Scoring</h3>
+                <p class="feature-description">Get feedback on your poetry.</p>
+            </div>
+            
+            <div class="feature-card">
+                <div class="feature-icon">
+                    <i class="fas fa-users"></i>
+                </div>
+                <h3 class="feature-title">Track Progress</h3>
+                <p class="feature-description">Build your poetry journey.</p>
             </div>
         </div>
 
-        <!-- Action Buttons -->
-        <div class="action-buttons">
-            <button class="btn btn-primary" id="playBtn">
+        <!-- Start Playing Button -->
+        <div class="action-section">
+            <button class="start-button" id="playBtn">
                 <i class="fas fa-play"></i>
-                Play
+                Start Playing
             </button>
-            <button class="btn btn-warning" onclick="clearAuth()" style="margin-left: 10px;">
-                <i class="fas fa-sign-out-alt"></i>
-                Log Out
-            </button>
+        </div>
+
+        <!-- Footer Tagline -->
+        <div class="footer">
+            <p class="tagline">Join thousands of poets expressing creativity daily.</p>
         </div>
 
         <!-- Login Modal -->
