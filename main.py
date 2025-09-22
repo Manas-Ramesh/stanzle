@@ -388,10 +388,17 @@ def google_callback():
             'redirect_uri': redirect_uri
         }
         
+        print(f"🔍 Google OAuth: Token exchange request - URL: {token_url}")
+        print(f"🔍 Google OAuth: Token data: {token_data}")
+        
         token_response = requests.post(token_url, data=token_data)
+        print(f"🔍 Google OAuth: Token response status: {token_response.status_code}")
+        print(f"🔍 Google OAuth: Token response: {token_response.text}")
+        
         token_json = token_response.json()
         
         if 'access_token' not in token_json:
+            print(f"🔍 Google OAuth: No access token in response: {token_json}")
             return redirect('/landing?error=token_failed')
         
         access_token = token_json['access_token']
