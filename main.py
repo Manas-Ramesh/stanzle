@@ -252,8 +252,8 @@ def email_login():
 @app.route('/login/google')
 def google_login():
     """Initiate Google OAuth login"""
-    client_id = os.getenv('GOOGLE_CLIENT_ID')
-    redirect_uri = os.getenv('GOOGLE_REDIRECT_URI', 'http://localhost:8000/login/google/authorized')
+    client_id = os.getenv('GOOGLE_CLIENT_ID', '').strip()
+    redirect_uri = os.getenv('GOOGLE_REDIRECT_URI', 'http://localhost:8000/login/google/authorized').strip()
     
     # Create the authorization URL
     auth_url = (
@@ -371,9 +371,9 @@ def google_callback():
     """Handle Google OAuth callback"""
     try:
         code = request.args.get('code')
-        client_id = os.getenv('GOOGLE_CLIENT_ID')
-        client_secret = os.getenv('GOOGLE_CLIENT_SECRET')
-        redirect_uri = os.getenv('GOOGLE_REDIRECT_URI', 'http://localhost:8000/login/google/authorized')
+        client_id = os.getenv('GOOGLE_CLIENT_ID', '').strip()
+        client_secret = os.getenv('GOOGLE_CLIENT_SECRET', '').strip()
+        redirect_uri = os.getenv('GOOGLE_REDIRECT_URI', 'http://localhost:8000/login/google/authorized').strip()
         
         if not code:
             return redirect('/landing?error=no_code')
