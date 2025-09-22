@@ -746,10 +746,15 @@ def track_challenge():
         return jsonify({'success': False, 'error': 'Internal server error'}), 500
 
 if __name__ == '__main__':
+    # Get configuration from environment
+    port = int(os.getenv('PORT', 8000))
+    host = os.getenv('HOST', '0.0.0.0')
+    debug = os.getenv('DEBUG', 'False').lower() == 'true'
+    
     print("🎭 Starting Stanzle Poetry Game...")
     print("📁 Serving static files from: public/")
-    print("🌐 Server will be available at: http://localhost:8000")
+    print(f"🌐 Server will be available at: http://{host}:{port}")
     print("🛑 Press Ctrl+C to stop the server")
     print("")
     
-    app.run(host='0.0.0.0', port=8000, debug=True)
+    app.run(host=host, port=port, debug=debug)
