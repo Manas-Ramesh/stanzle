@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Choose Your Username - Stanzle</title>
+    <link rel="stylesheet" href="/css/styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        .username-container {
+            max-width: 500px;
+            margin: 100px auto;
+            padding: 40px;
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            text-align: center;
+        }
+        
+        .username-container h1 {
+            color: #1f2937;
+            margin-bottom: 8px;
+            font-size: 2rem;
+        }
+        
+        .username-container p {
+            color: #6b7280;
+            margin-bottom: 32px;
+            font-size: 1.1rem;
+        }
+        
+        .form-group {
+            margin-bottom: 24px;
+            text-align: left;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #374151;
+        }
+        
+        .form-group input {
+            width: 100%;
+            padding: 12px 16px;
+            border: 2px solid #e5e7eb;
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: border-color 0.3s ease;
+        }
+        
+        .form-group input:focus {
+            outline: none;
+            border-color: #8b5cf6;
+        }
+        
+        .username-preview {
+            margin-top: 16px;
+            padding: 12px;
+            background: #f3f4f6;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            color: #6b7280;
+        }
+        
+        .error-message {
+            color: #ef4444;
+            font-size: 0.9rem;
+            margin-top: 8px;
+            display: none;
+        }
+        
+        .success-message {
+            color: #10b981;
+            font-size: 0.9rem;
+            margin-top: 8px;
+            display: none;
+        }
+        
+        .btn-primary {
+            width: 100%;
+            padding: 14px;
+            background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .btn-primary:hover {
+            background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%);
+            transform: translateY(-1px);
+        }
+        
+        .btn-primary:disabled {
+            background: #9ca3af;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .loading {
+            display: none;
+            margin-top: 16px;
+        }
+        
+        .loading i {
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+        
+        .back-link {
+            display: inline-block;
+            margin-bottom: 24px;
+            color: #6b7280;
+            text-decoration: none;
+            font-size: 0.9rem;
+        }
+        
+        .back-link:hover {
+            color: #8b5cf6;
+        }
+    </style>
+</head>
+<body>
+    <div class="username-container">
+        <a href="/landing" class="back-link">
+            <i class="fas fa-arrow-left"></i> Back to Login
+        </a>
+        
+        <h1>Welcome to Stanzle!</h1>
+        <p>Choose a username to complete your account setup</p>
+        
+        <form id="usernameForm">
+            <div class="form-group">
+                <label for="username">Username</label>
+                <input type="text" id="username" name="username" required 
+                       placeholder="Enter your username" maxlength="20">
+                <div class="error-message" id="usernameError"></div>
+                <div class="success-message" id="usernameSuccess"></div>
+            </div>
+            
+            <div class="username-preview" id="usernamePreview" style="display: none;">
+                <i class="fas fa-user"></i> Your username will be: <strong id="previewText"></strong>
+            </div>
+            
+            <button type="submit" class="btn-primary" id="submitBtn">
+                <i class="fas fa-check"></i> Complete Setup
+            </button>
+            
+            <div class="loading" id="loading">
+                <i class="fas fa-spinner"></i> Creating your account...
+            </div>
+        </form>
+    </div>
+
+    <script>
+        class UsernameSetup {
+            constructor() {
+                this.usernameInput = document.getElementById('username');
+                this.usernameForm = document.getElementById('usernameForm');
+                this.submitBtn = document.getElementById('submitBtn');
+                this.loading = document.getElementById('loading');
+                this.errorMessage = document.getElementById('usernameError');
+                this.successMessage = document.getElementById('usernameSuccess');
+                this.preview = document.getElementById('usernamePreview');
+                this.previewText = document.getElementById('previewText');
+                
+                this.setupEventListeners();
+                this.checkForGoogleAuth();
+            }
+            
+            setupEventListeners() {
+                this.usernameInput.addEventListener('input', () => this.validateUsername());
+                this.usernameForm.addEventListener('submit', (e) => this.handleSubmit(e));
+            }
+            
+            checkForGoogleAuth() {
+                // Check if user is already authenticated
+                const existingToken = this.getAuthToken();
+                if (existingToken) {
+                    console.log('🔍 User already authenticated, redirecting to main page');
+                    window.location.href = '/';
+                    return;
+                }
+                
+                // Check if we have Google auth data in URL params
+                const urlParams = new URLSearchParams(window.location.search);
+                this.googleEmail = urlParams.get('email');
+                this.googleName = urlParams.get('name');
+                
+                if (this.googleEmail) {
+                    console.log('🔍 Google auth data found:', { email: this.googleEmail, name: this.googleName });
+                    // Pre-fill username with email prefix if available
+                    const emailPrefix = this.googleEmail.split('@')[0];
+                    this.usernameInput.value = emailPrefix;
+                    this.validateUsername();
+                }
+            }
+            
+            getAuthToken() {
+                // Check localStorage first, then cookies
+                let token = localStorage.getItem('authToken');
+                if (!token) {
+                    // Try to get token from cookies
+                    const cookies = document.cookie.split(';');
+                    for (let cookie of cookies) {
+                        const [name, value] = cookie.trim().split('=');
+                        if (name === 'authToken') {
+                            token = value;
+                            break;
+                        }
+                    }
+                }
+                return token;
+            }
+            
+            validateUsername() {
+                const username = this.usernameInput.value.trim();
+                this.hideMessages();
+                
+                if (username.length < 3) {
+                    this.showError('Username must be at least 3 characters long');
+                    return false;
+                }
+                
+                if (username.length > 20) {
+                    this.showError('Username must be less than 20 characters');
+                    return false;
+                }
+                
+                if (!/^[a-zA-Z0-9_]+$/.test(username)) {
+                    this.showError('Username can only contain letters, numbers, and underscores');
+                    return false;
+                }
+                
+                // Show preview
+                this.previewText.textContent = username;
+                this.preview.style.display = 'block';
+                this.showSuccess('Username looks good!');
+                return true;
+            }
+            
+            async handleSubmit(e) {
+                e.preventDefault();
+                
+                if (!this.validateUsername()) {
+                    return;
+                }
+                
+                const username = this.usernameInput.value.trim();
+                this.showLoading();
+                
+                try {
+                    const response = await fetch('/api/auth/setup-google-user', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            username: username,
+                            email: this.googleEmail || '',
+                            name: this.googleName || ''
+                        })
+                    });
+                    
+                    const result = await response.json();
+                    
+                    if (result.success) {
+                        // Store the auth token
+                        if (result.token) {
+                            localStorage.setItem('authToken', result.token);
+                        }
+                        
+                        // Wait a moment for the cookie to be set, then redirect
+                        setTimeout(() => {
+                            window.location.href = '/';
+                        }, 500);
+                    } else {
+                        this.hideLoading();
+                        this.showError(result.message || 'Failed to create account');
+                    }
+                } catch (error) {
+                    this.hideLoading();
+                    this.showError('Network error. Please try again.');
+                }
+            }
+            
+            showLoading() {
+                this.submitBtn.disabled = true;
+                this.loading.style.display = 'block';
+            }
+            
+            hideLoading() {
+                this.submitBtn.disabled = false;
+                this.loading.style.display = 'none';
+            }
+            
+            showError(message) {
+                this.errorMessage.textContent = message;
+                this.errorMessage.style.display = 'block';
+                this.successMessage.style.display = 'none';
+            }
+            
+            showSuccess(message) {
+                this.successMessage.textContent = message;
+                this.successMessage.style.display = 'block';
+                this.errorMessage.style.display = 'none';
+            }
+            
+            hideMessages() {
+                this.errorMessage.style.display = 'none';
+                this.successMessage.style.display = 'none';
+            }
+        }
+        
+        // Initialize when page loads
+        document.addEventListener('DOMContentLoaded', () => {
+            new UsernameSetup();
+        });
+    </script>
+</body>
+</html>

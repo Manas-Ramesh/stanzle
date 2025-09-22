@@ -52,9 +52,26 @@ class ProfilePage {
         }
     }
 
+    getAuthToken() {
+        // Check localStorage first, then cookies
+        let token = localStorage.getItem('authToken');
+        if (!token) {
+            // Try to get token from cookies
+            const cookies = document.cookie.split(';');
+            for (let cookie of cookies) {
+                const [name, value] = cookie.trim().split('=');
+                if (name === 'authToken') {
+                    token = value;
+                    break;
+                }
+            }
+        }
+        return token;
+    }
+
     async checkAuthStatus() {
         try {
-            const token = localStorage.getItem('authToken');
+            const token = this.getAuthToken();
             if (!token) {
                 window.location.href = '/landing';
                 return;
@@ -177,7 +194,7 @@ class ProfilePage {
 
     async loadDailyScoreInfo() {
         try {
-            const token = localStorage.getItem('authToken');
+            const token = this.getAuthToken();
             const response = await fetch('/api/daily/submission-status', {
                 headers: {
                     'Authorization': `Bearer ${token}`
@@ -214,7 +231,7 @@ class ProfilePage {
 
     async loadSubmissionHistory() {
         try {
-            const token = localStorage.getItem('authToken');
+            const token = this.getAuthToken();
             const response = await fetch('/api/user/submission-history', {
                 headers: {
                     'Authorization': `Bearer ${token}`
@@ -436,7 +453,7 @@ class ProfilePage {
 
     async logout() {
         try {
-            const token = localStorage.getItem('authToken');
+            const token = this.getAuthToken();
             if (token) {
                 await fetch('/api/auth/logout', {
                     method: 'POST',

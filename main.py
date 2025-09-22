@@ -5,11 +5,12 @@ Simple entry point for the restructured application
 """
 
 import os
+import re
 import sys
 import secrets
 import requests
 from datetime import datetime, timedelta
-from flask import Flask, render_template, request, jsonify, redirect
+from flask import Flask, render_template, request, jsonify, redirect, send_from_directory
 from flask_cors import CORS
 from dotenv import load_dotenv
 from functools import wraps
@@ -64,6 +65,7 @@ def index():
     # Check if user is authenticated
     token = request.cookies.get('authToken')
     print(f"🔍 Auth check - Token: {token[:20] if token else 'None'}...")
+    print(f"🔍 All cookies: {request.cookies}")
     
     if not token:
         print("🔍 No token found, serving landing page")
@@ -73,8 +75,10 @@ def index():
     print(f"🔍 User verification result: {user is not None}")
     
     if not user:
+        print("🔍 Token verification failed, serving landing page")
         return render_template('landing.html')
     
+    print(f"🔍 User authenticated successfully: {user.get('username', 'Unknown')}")
     return render_template('index.html')
 
 @app.route('/landing')
@@ -259,6 +263,103 @@ def google_login():
     
     return redirect(auth_url)
 
+@app.route('/username')
+def username_setup():
+    """Serve username selection page for new Google users"""
+    return send_from_directory('public', 'username.html')
+
+@app.route('/api/auth/setup-google-user', methods=['POST'])
+def setup_google_user():
+    """Complete Google user setup with chosen username"""
+    try:
+        data = request.get_json()
+        username = data.get('username', '').strip()
+        
+        if not username:
+            return jsonify({
+                'success': False,
+                'message': 'Username is required'
+            }), 400
+        
+        # Validate username
+        if len(username) < 3 or len(username) > 20:
+            return jsonify({
+                'success': False,
+                'message': 'Username must be 3-20 characters long'
+            }), 400
+        
+        if not re.match(r'^[a-zA-Z0-9_]+$', username):
+            return jsonify({
+                'success': False,
+                'message': 'Username can only contain letters, numbers, and underscores'
+            }), 400
+        
+        # Check if username is already taken
+        users = auth_service._load_users()
+        if username in users:
+            return jsonify({
+                'success': False,
+                'message': 'Username is already taken'
+            }), 400
+        
+        # Get Google user info from request data
+        email = data.get('email', '')
+        name = data.get('name', '')
+        
+        user_data = {
+            'username': username,
+            'email': email,
+            'password_hash': auth_service._hash_password('google_oauth'),
+            'created_at': datetime.now().isoformat(),
+            'last_login': None,
+            'games_played': 0,
+            'total_score': 0,
+            'best_score': 0
+        }
+        
+        users[username] = user_data
+        auth_service._save_users(users)
+        
+        # Create session
+        session_token = secrets.token_urlsafe(32)
+        sessions = auth_service._load_sessions()
+        
+        sessions[session_token] = {
+            'username': username,
+            'created_at': datetime.now().isoformat(),
+            'expires_at': (datetime.now() + timedelta(days=7)).isoformat()
+        }
+        auth_service._save_sessions(sessions)
+        
+        print(f"🔍 Google user setup: Created user {username}")
+        
+        response = jsonify({
+            'success': True,
+            'message': 'Account created successfully',
+            'token': session_token,
+            'user': {
+                'username': username,
+                'email': user_data['email'],
+                'created_at': user_data['created_at'],
+                'games_played': user_data['games_played'],
+                'total_score': user_data['total_score'],
+                'best_score': user_data['best_score']
+            }
+        })
+        
+        # Set the cookie
+        response.set_cookie('authToken', session_token, max_age=7*24*60*60, path='/', secure=False, httponly=False)
+        print(f"🔍 Google user setup: Set cookie and returning response")
+        
+        return response
+        
+    except Exception as e:
+        print(f"Google user setup error: {e}")
+        return jsonify({
+            'success': False,
+            'message': 'Failed to create account'
+        }), 500
+
 @app.route('/login/google/authorized')
 def google_callback():
     """Handle Google OAuth callback"""
@@ -298,38 +399,73 @@ def google_callback():
         email = user_info.get('email')
         username = email.split('@')[0] if email else f"google_user_{secrets.token_hex(4)}"
         
-        # Check if user exists, if not create one
+        # Check if user exists by email first, then by username
         users = auth_service._load_users()
-        if username not in users:
-            # Create new user with Google info
-            user_data = {
+        existing_user = None
+        existing_username = None
+        
+        # Look for existing user by email
+        for user_key, user_data in users.items():
+            if user_data.get('email') == email:
+                existing_user = user_data
+                existing_username = user_key
+                break
+        
+        print(f"🔍 Google OAuth: Email {email}, existing_user: {existing_username}")
+        
+        if existing_user:
+            # Use existing user - create session and redirect to main page
+            username = existing_username
+            print(f"🔍 Google OAuth: Found existing user by email: {username}")
+            
+            # Create session for existing user
+            session_token = secrets.token_urlsafe(32)
+            sessions = auth_service._load_sessions()
+            
+            sessions[session_token] = {
                 'username': username,
-                'email': email,
-                'password_hash': auth_service._hash_password('google_oauth'),
                 'created_at': datetime.now().isoformat(),
-                'last_login': None,
-                'games_played': 0,
-                'total_score': 0,
-                'best_score': 0
+                'expires_at': (datetime.now() + timedelta(days=7)).isoformat()
             }
-            users[username] = user_data
-            auth_service._save_users(users)
-        
-        # Create session
-        session_token = secrets.token_urlsafe(32)
-        sessions = auth_service._load_sessions()
-        
-        sessions[session_token] = {
-            'username': username,
-            'created_at': datetime.now().isoformat(),
-            'expires_at': (datetime.now() + timedelta(days=7)).isoformat()
-        }
-        auth_service._save_sessions(sessions)
-        
-        # Set cookie and redirect
-        response = redirect('/')
-        response.set_cookie('authToken', session_token, max_age=7*24*60*60)
-        return response
+            auth_service._save_sessions(sessions)
+            
+            print(f"🔍 Google OAuth: Created session token: {session_token[:20]}... for existing user: {username}")
+            
+            # Set cookie and redirect to main page
+            response = redirect('/')
+            response.set_cookie('authToken', session_token, max_age=7*24*60*60, path='/', secure=False, httponly=False)
+            print(f"🔍 Google OAuth: Set cookie and redirecting to /")
+            return response
+        else:
+            # New user - redirect to username selection page
+            print(f"🔍 Google OAuth: New user detected, redirecting to username selection")
+            
+            # Check if user is already authenticated (they might have completed setup)
+            existing_token = request.cookies.get('authToken')
+            if existing_token:
+                print(f"🔍 Google OAuth: User already has auth token, checking if valid")
+                user = auth_service.verify_token(existing_token)
+                if user:
+                    print(f"🔍 Google OAuth: User already authenticated, redirecting to main page")
+                    return redirect('/')
+            
+            # Store Google user info in session for username setup
+            temp_session_token = secrets.token_urlsafe(32)
+            temp_sessions = auth_service._load_sessions()
+            
+            # Store Google user info temporarily
+            temp_sessions[temp_session_token] = {
+                'google_user': True,
+                'email': email,
+                'name': user_info.get('name', ''),
+                'created_at': datetime.now().isoformat(),
+                'expires_at': (datetime.now() + timedelta(hours=1)).isoformat()  # Short expiry for setup
+            }
+            auth_service._save_sessions(temp_sessions)
+            
+            # Redirect to username selection page with Google user info
+            redirect_url = f'/username?email={email}&name={user_info.get("name", "")}&token={temp_session_token}'
+            return redirect(redirect_url)
         
     except Exception as e:
         print(f"Google OAuth error: {e}")

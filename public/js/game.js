@@ -372,10 +372,23 @@ class StanzleGame {
             }
         }
 
+        console.log('🔍 Updating UI with new challenge:', {
+            theme: this.currentTheme,
+            emotion: this.currentEmotion,
+            words: this.requiredWords
+        });
+        
         this.themeWord.textContent = this.currentTheme;
         this.emotionWord.textContent = this.currentEmotion;
         this.easyThemeWord.textContent = this.currentTheme;
         this.easyEmotionWord.textContent = this.currentEmotion;
+        
+        console.log('🔍 UI elements updated:', {
+            themeWord: this.themeWord.textContent,
+            emotionWord: this.emotionWord.textContent,
+            easyThemeWord: this.easyThemeWord.textContent,
+            easyEmotionWord: this.easyEmotionWord.textContent
+        });
         
         // Clear the poem editor for new challenge
         this.poemEditor.innerHTML = '';
@@ -469,7 +482,11 @@ class StanzleGame {
                 this.currentTheme = result.challenge.theme;
                 this.currentEmotion = result.challenge.emotion;
                 this.requiredWords = result.challenge.words;
-                console.log('DEBUG: Challenge set - Theme:', this.currentTheme, 'Emotion:', this.currentEmotion);
+                console.log('🔍 New challenge data received:', {
+                    theme: this.currentTheme,
+                    emotion: this.currentEmotion,
+                    words: this.requiredWords
+                });
             } else {
                 // Fallback to predefined challenges if API fails
                 console.log('DEBUG: API failed, using fallback');
@@ -548,13 +565,28 @@ class StanzleGame {
 
     // Method to force generate a new challenge (for testing)
     async forceNewChallenge() {
-        console.log('DEBUG: Forcing new challenge generation');
+        console.log('🎭 Forcing new challenge generation');
         this.clearDailyChallenge();
         await this.generateNewChallenge();
-        console.log('DEBUG: New challenge generated - Theme:', this.currentTheme, 'Emotion:', this.currentEmotion);
+        console.log('🎭 New challenge generated - Theme:', this.currentTheme, 'Emotion:', this.currentEmotion);
+        
+        // Update UI with new challenge data
+        this.themeWord.textContent = this.currentTheme;
+        this.emotionWord.textContent = this.currentEmotion;
+        this.easyThemeWord.textContent = this.currentTheme;
+        this.easyEmotionWord.textContent = this.currentEmotion;
+        
+        // Update word list
+        this.updateWordList();
+        
+        // Update mode display
+        this.updateModeDisplay();
+        
+        console.log('🎭 UI updated with new challenge data');
     }
 
     updateWordList() {
+        console.log('🔍 updateWordList called with requiredWords:', this.requiredWords);
         this.wordList.innerHTML = '';
         this.requiredWords.forEach(word => {
             const wordElement = document.createElement('span');
@@ -563,6 +595,7 @@ class StanzleGame {
             wordElement.dataset.word = word.toLowerCase();
             this.wordList.appendChild(wordElement);
         });
+        console.log('🔍 Word list updated, children count:', this.wordList.children.length);
         
         // Debug logging for unlimited mode
         if (this.isUnlimitedMode) {
@@ -1199,9 +1232,11 @@ class StanzleGame {
             this.resetForRetry();
         });
 
-        document.getElementById('unlimitedRetryBtn').addEventListener('click', () => {
+        document.getElementById('unlimitedRetryBtn').addEventListener('click', async () => {
             if (this.isUnlimitedMode) {
-                // Keep the same challenge for unlimited mode retry
+                // Generate a completely new challenge for unlimited mode
+                console.log('🎭 New Challenge button clicked - generating new challenge');
+                await this.forceNewChallenge();
                 this.resetForRetry();
             } else {
                 window.location.href = '/unlimited.html';
@@ -1397,13 +1432,16 @@ class StanzleGame {
         return synonymDatabase[lowerWord] || ['No synonyms found'];
     }
     
-    initializeUserMenu() {
-        // Load user data from localStorage
+    async initializeUserMenu() {
+        // Load user data from localStorage first
         const userData = localStorage.getItem('user');
         if (userData) {
             this.user = JSON.parse(userData);
             this.updateUserDisplay();
         }
+        
+        // Also load fresh user data from server
+        await this.loadUserData();
         
         // Setup user menu event listeners
         const userMenuBtn = document.getElementById('userMenuBtn');
@@ -1435,23 +1473,64 @@ class StanzleGame {
         this.loadDailyScoreInfo();
     }
     
+    async loadUserData() {
+        try {
+            const token = this.getAuthToken();
+            if (!token) {
+                console.log('No auth token found, skipping user data load');
+                return;
+            }
+
+            const response = await fetch('/api/auth/verify', {
+                method: 'GET',
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+
+            if (response.ok) {
+                const result = await response.json();
+                if (result.success) {
+                    this.user = result.user;
+                    // Save to localStorage
+                    localStorage.setItem('user', JSON.stringify(this.user));
+                    this.updateUserDisplay();
+                    console.log('🔍 User data loaded:', this.user);
+                }
+            }
+        } catch (error) {
+            console.error('Error loading user data:', error);
+        }
+    }
+    
     updateUserDisplay() {
         if (!this.user) return;
+        
+        console.log('🔍 Updating user display with:', this.user);
         
         const usernameDisplay = document.getElementById('usernameDisplay');
         const gamesPlayed = document.getElementById('gamesPlayed');
         const bestScore = document.getElementById('bestScore');
+        const totalScore = document.getElementById('totalScore');
         
         if (usernameDisplay) {
-            usernameDisplay.textContent = this.user.username;
+            usernameDisplay.textContent = this.user.username || 'User';
+            console.log('🔍 Set username to:', this.user.username);
         }
         
         if (gamesPlayed) {
             gamesPlayed.textContent = this.user.games_played || 0;
+            console.log('🔍 Set games played to:', this.user.games_played);
         }
         
         if (bestScore) {
             bestScore.textContent = this.user.best_score || 0;
+            console.log('🔍 Set best score to:', this.user.best_score);
+        }
+        
+        if (totalScore) {
+            totalScore.textContent = this.user.total_score || 0;
+            console.log('🔍 Set total score to:', this.user.total_score);
         }
     }
     
@@ -1505,9 +1584,26 @@ class StanzleGame {
         }
     }
 
+    getAuthToken() {
+        // Check localStorage first, then cookies
+        let token = localStorage.getItem('authToken');
+        if (!token) {
+            // Try to get token from cookies
+            const cookies = document.cookie.split(';');
+            for (let cookie of cookies) {
+                const [name, value] = cookie.trim().split('=');
+                if (name === 'authToken') {
+                    token = value;
+                    break;
+                }
+            }
+        }
+        return token;
+    }
+
     async checkDailySubmissionStatus() {
         try {
-            const token = localStorage.getItem('authToken');
+            const token = this.getAuthToken();
             if (!token) {
                 return { can_submit: false, message: 'Please log in to submit daily challenges' };
             }
@@ -1530,7 +1626,7 @@ class StanzleGame {
 
     async submitDailyScore(score, submissionData = null) {
         try {
-            const token = localStorage.getItem('authToken');
+            const token = this.getAuthToken();
             if (!token) {
                 console.error('No auth token found');
                 return;
@@ -1586,7 +1682,7 @@ class StanzleGame {
 
     async loadDailyScoreHistory() {
         try {
-            const token = localStorage.getItem('authToken');
+            const token = this.getAuthToken();
             if (!token) {
                 return null;
             }
