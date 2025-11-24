@@ -59,6 +59,11 @@ def require_auth(f):
         return f(*args, **kwargs)
     return decorated_function
 
+@app.route('/health')
+def health():
+    """Health check endpoint for Railway and other monitoring"""
+    return jsonify({'status': 'OK'}), 200
+
 @app.route('/')
 def index():
     """Serve the main game page or redirect to landing"""
