@@ -5,7 +5,7 @@ import { GameSettings } from "../components/GameSettings";
 import { ThemeEmotionSelector } from "../components/ThemeEmotionSelector";
 import { PoemEditor } from "../components/PoemEditor";
 import { ScoreDisplay } from "../components/ScoreDisplay";
-import { fetchNewChallenge, trackChallengeForArchive, type ChallengeWords } from "@/lib/challenge";
+import { fetchUnlimitedChallenge, type ChallengeWords } from "@/lib/challenge";
 import {
   analyzePoem,
   normalizeTotalScore,
@@ -43,9 +43,8 @@ export function UnlimitedModePage() {
   const loadChallenge = useCallback(async () => {
     setChallengeLoading(true);
     try {
-      const c = await fetchNewChallenge();
+      const c = await fetchUnlimitedChallenge();
       setChallenge(c);
-      void trackChallengeForArchive(c);
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Could not load challenge");
     } finally {

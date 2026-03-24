@@ -165,3 +165,14 @@ class WordnikService:
             'theme': theme,
             'emotion': emotion
         }
+
+    def generate_unlimited_challenge(self) -> Dict[str, Any]:
+        """Generate a fresh random challenge for unlimited mode."""
+        words = self.get_random_words(4)
+        theme = self.get_random_theme()
+        emotion = self.get_random_emotion()
+        return {
+            'words': words,
+            'theme': theme,
+            'emotion': emotion
+        }

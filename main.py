@@ -556,8 +556,16 @@ def google_callback():
 
 @app.route('/api/challenge', methods=['GET'])
 def get_daily_challenge():
-    """Get today's global daily challenge (same for everyone)."""
+    """Get challenge. Daily is deterministic; unlimited is always fresh random."""
     try:
+        mode = (request.args.get('mode') or '').strip().lower()
+        if mode == 'unlimited':
+            challenge = wordnik_service.generate_unlimited_challenge()
+            return jsonify({
+                'success': True,
+                'challenge': challenge
+            })
+
         today = datetime.now().strftime('%Y-%m-%d')
         existing = challenge_tracker.get_challenge_by_date(today) or {}
         if existing.get('theme') and existing.get('emotion') and existing.get('words'):
