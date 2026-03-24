@@ -24,6 +24,13 @@ export function HomePage() {
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
   const [dailyDone, setDailyDone] = useState(false);
+  /**
+   * Until /api/daily/submission-status returns. Start true when a token exists so reload never paints "Play"
+   * before we know submission status (effect runs after first paint).
+   */
+  const [dailyStatusLoading, setDailyStatusLoading] = useState(
+    () => typeof window !== "undefined" && !!getAuthToken(),
+  );
   const authUsernameId = useId();
   const authEmailId = useId();
   const authPasswordId = useId();
@@ -38,15 +45,23 @@ export function HomePage() {
   useEffect(() => {
     if (!user || !getAuthToken()) {
       setDailyDone(false);
+      setDailyStatusLoading(false);
       return;
     }
     let cancelled = false;
+    setDailyStatusLoading(true);
     apiFetch<{ can_submit?: boolean }>("/api/daily/submission-status", { method: "GET" })
       .then((s) => {
-        if (!cancelled) setDailyDone(s.can_submit === false);
+        if (!cancelled) {
+          setDailyDone(s.can_submit === false);
+          setDailyStatusLoading(false);
+        }
       })
       .catch(() => {
-        if (!cancelled) setDailyDone(false);
+        if (!cancelled) {
+          setDailyDone(false);
+          setDailyStatusLoading(false);
+        }
       });
     return () => {
       cancelled = true;
@@ -258,9 +273,14 @@ export function HomePage() {
                 <button
                   type="button"
                   onClick={handlePlay}
-                  className="px-8 py-3 bg-gray-900 text-white font-bold rounded-full hover:bg-gray-800 transition-colors"
+                  disabled={dailyStatusLoading}
+                  className="min-w-[11rem] px-8 py-3 bg-gray-900 text-white font-bold rounded-full hover:bg-gray-800 transition-colors disabled:opacity-70 disabled:cursor-wait"
                 >
-                  {dailyDone ? "View daily challenge" : "Play"}
+                  {dailyStatusLoading
+                    ? "Loading…"
+                    : dailyDone
+                      ? "View daily challenge"
+                      : "Play"}
                 </button>
                 <Link
                   to="/leaderboard"
@@ -270,9 +290,11 @@ export function HomePage() {
                 </Link>
               </div>
               <p className="text-sm text-gray-500">
-                {dailyDone
-                  ? "You already submitted today — View daily challenge for your results; Leaderboard shows today’s top scores."
-                  : "Solve today’s challenge and submit your score."}
+                {dailyStatusLoading
+                  ? "Checking today’s challenge…"
+                  : dailyDone
+                    ? "You already submitted today — View daily challenge for your results; Leaderboard shows today’s top scores."
+                    : "Solve today’s challenge and submit your score."}
               </p>
               <button
                 type="button"
