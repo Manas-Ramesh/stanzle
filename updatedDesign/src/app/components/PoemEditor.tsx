@@ -56,9 +56,10 @@ export function PoemEditor({
   const foreColorInputId = useId();
   const backColorInputId = useId();
   const editorRef = useRef<HTMLDivElement>(null);
-  const foreInputRef = useRef<HTMLInputElement>(null);
-  const backInputRef = useRef<HTMLInputElement>(null);
   const pendingRangeRef = useRef<Range | null>(null);
+
+  const [foreSwatch, setForeSwatch] = useState("#111827");
+  const [backSwatch, setBackSwatch] = useState("#fef08a");
 
   const [wordCount, setWordCount] = useState(0);
   const [showPlaceholder, setShowPlaceholder] = useState(true);
@@ -231,15 +232,25 @@ export function PoemEditor({
   };
 
   const applyForeColor = (hex: string) => {
+    setForeSwatch(hex);
     restorePendingSelection();
     applyInlineStyles({ color: hex });
     requestAnimationFrame(() => syncFromDom());
   };
 
   const applyBackColor = (hex: string) => {
+    setBackSwatch(hex);
     restorePendingSelection();
     applyInlineStyles({ backgroundColor: hex });
     requestAnimationFrame(() => syncFromDom());
+  };
+
+  const onToolbarMouseDownCapture = (e: React.MouseEvent) => {
+    const t = e.target as HTMLElement;
+    // Color inputs stash selection on their own pointerdown; skipping here avoids running
+    // before the real target is known and keeps native picker activation reliable.
+    if (t.closest?.('input[type="color"]')) return;
+    stashSelection();
   };
 
   const handleFind = () => {
@@ -316,7 +327,7 @@ export function PoemEditor({
 
         <div
           className="border-2 border-gray-300 rounded-t bg-gray-50 px-3 py-2 flex flex-wrap items-center gap-1"
-          onMouseDownCapture={stashSelection}
+          onMouseDownCapture={onToolbarMouseDownCapture}
         >
           <button
             type="button"
@@ -377,7 +388,6 @@ export function PoemEditor({
             name="stanzle-poem-font-family"
             className="px-2 py-1 text-sm border border-gray-300 rounded bg-white text-gray-700 focus:outline-none focus:border-gray-500 max-w-[7rem]"
             defaultValue="Inter"
-            onMouseDown={() => stashSelection()}
             onChange={(e) => {
               applyFontFamily(e.target.value);
             }}
@@ -396,7 +406,6 @@ export function PoemEditor({
             name="stanzle-poem-font-size"
             className="px-2 py-1 text-sm border border-gray-300 rounded bg-white text-gray-700 focus:outline-none focus:border-gray-500"
             defaultValue="16px"
-            onMouseDown={() => stashSelection()}
             onChange={(e) => {
               applyFontSize(e.target.value);
             }}
@@ -409,30 +418,44 @@ export function PoemEditor({
 
           <div className="w-px h-6 bg-gray-300 mx-1" />
 
-          <button
-            type="button"
-            className="p-1.5 hover:bg-gray-200 rounded transition-colors"
+          <label
+            className="relative inline-flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center rounded transition-colors hover:bg-gray-200"
             title="Text color"
-            onMouseDown={(e) => {
-              stashSelection();
-              e.preventDefault();
-            }}
-            onClick={() => foreInputRef.current?.click()}
           >
-            <div className="w-4 h-4 bg-black rounded-sm border border-gray-300" />
-          </button>
-          <button
-            type="button"
-            className="p-1.5 hover:bg-gray-200 rounded transition-colors"
+            <input
+              id={foreColorInputId}
+              name="stanzle-poem-text-color"
+              type="color"
+              value={foreSwatch}
+              className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
+              aria-label="Text color"
+              onPointerDown={stashSelection}
+              onChange={(e) => applyForeColor(e.target.value)}
+            />
+            <span
+              className="pointer-events-none h-4 w-4 rounded-sm border border-gray-300"
+              style={{ backgroundColor: foreSwatch }}
+            />
+          </label>
+          <label
+            className="relative inline-flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center rounded transition-colors hover:bg-gray-200"
             title="Highlight color"
-            onMouseDown={(e) => {
-              stashSelection();
-              e.preventDefault();
-            }}
-            onClick={() => backInputRef.current?.click()}
           >
-            <div className="w-4 h-4 bg-white rounded-sm border border-gray-300" />
-          </button>
+            <input
+              id={backColorInputId}
+              name="stanzle-poem-highlight-color"
+              type="color"
+              value={backSwatch}
+              className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
+              aria-label="Highlight color"
+              onPointerDown={stashSelection}
+              onChange={(e) => applyBackColor(e.target.value)}
+            />
+            <span
+              className="pointer-events-none h-4 w-4 rounded-sm border border-gray-300"
+              style={{ backgroundColor: backSwatch }}
+            />
+          </label>
 
           <div className="w-px h-6 bg-gray-300 mx-1" />
 
@@ -485,27 +508,6 @@ export function PoemEditor({
             <Music className="w-4 h-4 text-gray-700" />
           </button>
         </div>
-
-        <input
-          ref={foreInputRef}
-          id={foreColorInputId}
-          name="stanzle-poem-text-color"
-          type="color"
-          className="absolute -left-[9999px] w-8 h-8 opacity-0"
-          defaultValue="#111827"
-          onInput={(e) => applyForeColor((e.target as HTMLInputElement).value)}
-          aria-label="Text color"
-        />
-        <input
-          ref={backInputRef}
-          id={backColorInputId}
-          name="stanzle-poem-highlight-color"
-          type="color"
-          className="absolute -left-[9999px] w-8 h-8 opacity-0"
-          defaultValue="#fef08a"
-          onInput={(e) => applyBackColor((e.target as HTMLInputElement).value)}
-          aria-label="Highlight color"
-        />
 
         <div
           ref={editorRef}
