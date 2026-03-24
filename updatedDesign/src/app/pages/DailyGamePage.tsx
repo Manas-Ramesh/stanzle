@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router";
+import { UnlimitedPrefetchLink } from "../components/UnlimitedPrefetchLink";
 import { toast } from "sonner";
 import { GameSettings } from "../components/GameSettings";
 import { ThemeEmotionSelector } from "../components/ThemeEmotionSelector";
@@ -388,12 +389,12 @@ export function DailyGamePage() {
             . Detailed results aren&apos;t stored for this submission.
           </p>
           <div className="flex flex-col gap-3">
-            <Link
+            <UnlimitedPrefetchLink
               to="/unlimited"
               className="px-6 py-3 bg-gray-900 text-white font-bold rounded hover:bg-gray-800 text-center"
             >
               Unlimited Mode
-            </Link>
+            </UnlimitedPrefetchLink>
             <Link
               to="/progress"
               className="px-6 py-3 border-2 border-gray-900 text-gray-900 font-bold rounded hover:bg-gray-50 text-center"

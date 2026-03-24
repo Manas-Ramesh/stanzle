@@ -5,7 +5,11 @@ import { GameSettings } from "../components/GameSettings";
 import { ThemeEmotionSelector } from "../components/ThemeEmotionSelector";
 import { PoemEditor } from "../components/PoemEditor";
 import { ScoreDisplay } from "../components/ScoreDisplay";
-import { fetchUnlimitedChallenge, type ChallengeWords } from "@/lib/challenge";
+import {
+  consumeUnlimitedPrefetchOrFetch,
+  fetchUnlimitedChallenge,
+  type ChallengeWords,
+} from "@/lib/challenge";
 import {
   analyzePoem,
   normalizeTotalScore,
@@ -40,10 +44,12 @@ export function UnlimitedModePage() {
   const [guess, setGuess] = useState<AiGuess | null>(null);
   const [scores, setScores] = useState<ScoreResult | null>(null);
 
-  const loadChallenge = useCallback(async () => {
+  const loadChallenge = useCallback(async (opts?: { fresh: boolean }) => {
     setChallengeLoading(true);
     try {
-      const c = await fetchUnlimitedChallenge();
+      const c = opts?.fresh
+        ? await fetchUnlimitedChallenge()
+        : await consumeUnlimitedPrefetchOrFetch();
       setChallenge(c);
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Could not load challenge");
@@ -63,7 +69,7 @@ export function UnlimitedModePage() {
     setPoemText("");
     setGuess(null);
     setScores(null);
-    void loadChallenge();
+    void loadChallenge({ fresh: true });
   }, [loadChallenge]);
 
   const handleSubmit = useCallback(async () => {

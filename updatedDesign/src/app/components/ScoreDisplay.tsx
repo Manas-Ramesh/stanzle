@@ -1,5 +1,6 @@
 import { Button } from "./ui/button";
 import { Link } from "react-router";
+import { UnlimitedPrefetchLink } from "./UnlimitedPrefetchLink";
 
 interface ScoreDisplayProps {
   themeScore: number;
@@ -163,7 +164,7 @@ export function ScoreDisplay({
               <p className="text-gray-600">Come back tomorrow for a new challenge</p>
               <div className="flex flex-col gap-3">
                 <Button className="w-full rounded-full font-bold" size="lg" asChild>
-                  <Link to="/unlimited">Try Unlimited Mode</Link>
+                  <UnlimitedPrefetchLink to="/unlimited">Try Unlimited Mode</UnlimitedPrefetchLink>
                 </Button>
                 <Button variant="outline" className="w-full rounded-full font-bold border-2" size="lg" asChild>
                   <Link to="/progress">View Progress</Link>

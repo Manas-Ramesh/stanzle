@@ -11,7 +11,7 @@ import secrets
 import requests
 from urllib.parse import urlencode, urlparse
 from datetime import datetime, timedelta
-from flask import Flask, request, jsonify, redirect, send_from_directory, abort, make_response
+from flask import Flask, request, jsonify, redirect, send_from_directory, make_response
 from flask_cors import CORS
 from dotenv import load_dotenv
 from functools import wraps
@@ -76,7 +76,11 @@ def _clear_auth_token_cookie(response):
 
 
 # Add current directory to Python path
-sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+_APP_ROOT = os.path.dirname(os.path.abspath(__file__))
+sys.path.append(_APP_ROOT)
+# Absolute path for SPA/static files (must not use static_url_path='' — Flask registers
+# /<path:filename> for that and wins over our SPA catch-all, so /unlimited 404s as "missing file").
+_PUBLIC_DIR = os.path.join(_APP_ROOT, "public")
 
 # Import services
 from src.backend.services.wordnik_service import WordnikService
@@ -85,11 +89,8 @@ from src.backend.services.auth_service import AuthService
 from src.backend.services.challenge_tracker import ChallengeTracker
 from src.backend.utils.validators import validate_poem_data
 
-# Initialize Flask app
-app = Flask(__name__, 
-            static_folder='public',
-            template_folder='public',
-            static_url_path='')
+# Initialize Flask app (static_folder=None avoids duplicate /<path> rule; we serve public/ in static_or_spa)
+app = Flask(__name__, static_folder=None, template_folder=_PUBLIC_DIR)
 
 # Trust X-Forwarded-* from Railway / Render / Vercel so request.url_root reflects the browser host (e.g. stanzle.com).
 app.wsgi_app = ProxyFix(
@@ -140,12 +141,12 @@ def health():
 @app.route('/')
 def spa_index():
     """Serve React SPA (Vite build copied to public/index.html)."""
-    return send_from_directory(app.static_folder, 'index.html')
+    return send_from_directory(_PUBLIC_DIR, "index.html")
 
 @app.route('/landing')
 def landing_page():
     """Legacy HTML landing (optional bookmark). Main app is the SPA at /."""
-    return send_from_directory(app.static_folder, 'landing.html')
+    return send_from_directory(_PUBLIC_DIR, "landing.html")
 
 
 # Authentication Routes
@@ -313,7 +314,7 @@ def google_login():
 @app.route('/username')
 def username_setup():
     """Serve username selection page for new Google users"""
-    return send_from_directory('public', 'username.html')
+    return send_from_directory(_PUBLIC_DIR, "username.html")
 
 @app.route('/api/auth/setup-google-user', methods=['POST'])
 def setup_google_user():
@@ -647,7 +648,12 @@ def score_poem():
 
 @app.errorhandler(404)
 def not_found(error):
-    return jsonify({'error': 'Endpoint not found'}), 404
+    """API: JSON. Browser GET on non-/api paths: SPA shell (client-side routes)."""
+    if request.path.startswith("/api/"):
+        return jsonify({"error": "Endpoint not found"}), 404
+    if request.method == "GET":
+        return send_from_directory(_PUBLIC_DIR, "index.html")
+    return jsonify({"error": "Endpoint not found"}), 404
 
 @app.errorhandler(500)
 def internal_error(error):
@@ -851,12 +857,12 @@ def static_or_spa(requested_path):
     """Serve files from public/; unknown paths return SPA shell for client-side routes (/play, etc.)."""
     if requested_path.startswith('api/'):
         return jsonify({'error': 'Not found'}), 404
-    if '..' in requested_path or requested_path.startswith(('/', '\\')):
-        abort(404)
-    full_path = os.path.join(app.static_folder, requested_path)
+    if ".." in requested_path or requested_path.startswith(("/", "\\")):
+        return jsonify({"error": "Invalid path"}), 404
+    full_path = os.path.join(_PUBLIC_DIR, requested_path)
     if os.path.isfile(full_path):
-        return send_from_directory(app.static_folder, requested_path)
-    return send_from_directory(app.static_folder, 'index.html')
+        return send_from_directory(_PUBLIC_DIR, requested_path)
+    return send_from_directory(_PUBLIC_DIR, "index.html")
 
 
 if __name__ == '__main__':

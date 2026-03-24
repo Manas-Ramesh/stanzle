@@ -3,17 +3,28 @@ Wordnik Service
 Handles Wordnik API integration for random words, themes, and emotions
 """
 
-import requests
 import random
 import os
 import hashlib
 from datetime import date as date_cls
 from typing import List, Dict, Any, Optional
 
+import requests
+from requests.adapters import HTTPAdapter
+
 class WordnikService:
+    # (connect, read) — fail fast on dead routes; read cap avoids hanging workers
+    _REQUEST_TIMEOUT = (2.5, 8.0)
+
     def __init__(self):
         self.api_key = os.getenv('WORDNIK_API_KEY')
-        self.base_url = "http://api.wordnik.com/v4"
+        # HTTPS avoids http→https redirect latency on every cold connection
+        self.base_url = "https://api.wordnik.com/v4"
+        self._session = requests.Session()
+        # Keep-alive + small pool: faster repeat unlimited loads on the same worker
+        adapter = HTTPAdapter(pool_connections=4, pool_maxsize=8, max_retries=0)
+        self._session.mount("https://", adapter)
+        self._session.mount("http://", adapter)
         
         # Word categories for filtering
         self.poetic_parts_of_speech = ['noun', 'verb', 'adjective']
@@ -59,7 +70,7 @@ class WordnikService:
                 'api_key': self.api_key
             }
             
-            response = requests.get(url, params=params, timeout=10)
+            response = self._session.get(url, params=params, timeout=self._REQUEST_TIMEOUT)
             response.raise_for_status()
             
             words_data = response.json()
@@ -135,7 +146,7 @@ class WordnikService:
                     'api_key': self.api_key
                 }
                 
-                response = requests.get(url, params=params, timeout=5)
+                response = self._session.get(url, params=params, timeout=self._REQUEST_TIMEOUT)
                 if response.status_code == 200:
                     data = response.json()
                     if data:

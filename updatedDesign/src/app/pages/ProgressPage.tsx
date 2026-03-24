@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router";
+import { UnlimitedPrefetchLink } from "../components/UnlimitedPrefetchLink";
 import { useAuth } from "@/context/AuthContext";
 import { apiFetch, getAuthToken } from "@/lib/api";
 
@@ -201,12 +202,12 @@ export function ProgressPage() {
         </div>
 
         <div className="mt-16 pt-10 border-t border-gray-300 flex justify-center">
-          <Link
+          <UnlimitedPrefetchLink
             to="/unlimited"
             className="px-8 py-3 bg-gray-900 text-white font-bold rounded-full hover:bg-gray-800 transition-colors text-center"
           >
             Play Unlimited
-          </Link>
+          </UnlimitedPrefetchLink>
         </div>
       </div>
     </div>
