@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useId, useRef, useState } from "react";
 import {
   Bold,
   Italic,
@@ -50,6 +50,7 @@ export function PoemEditor({
   placeholder = "Start writing your poem...",
   onTextChange,
 }: PoemEditorProps) {
+  const poemLabelId = useId();
   const editorRef = useRef<HTMLDivElement>(null);
   const foreInputRef = useRef<HTMLInputElement>(null);
   const backInputRef = useRef<HTMLInputElement>(null);
@@ -303,9 +304,9 @@ export function PoemEditor({
 
       <div className="relative">
         <div className="flex items-center justify-between mb-2">
-          <label className="text-sm font-medium text-gray-700" htmlFor="poem-editor">
+          <span id={poemLabelId} className="text-sm font-medium text-gray-700">
             Your Poem
-          </label>
+          </span>
           <span className="text-sm text-gray-500">{wordLabel}</span>
         </div>
 
@@ -490,9 +491,9 @@ export function PoemEditor({
 
         <div
           ref={editorRef}
-          id="poem-editor"
           role="textbox"
           aria-multiline="true"
+          aria-labelledby={poemLabelId}
           contentEditable
           suppressContentEditableWarning
           data-placeholder={placeholder}
