@@ -4,6 +4,7 @@ Handles user registration, login, and session management
 """
 
 import hashlib
+import re
 import secrets
 import json
 import os
@@ -16,8 +17,18 @@ class AuthService:
         self.users_file = os.path.join(data_dir, "users.json")
         self.sessions_file = os.path.join(data_dir, "sessions.json")
         
+        # Initialize memory storage attributes
+        self._use_memory_storage = False
+        self._users = {}
+        self._sessions = {}
+        
         # Create data directory if it doesn't exist
-        os.makedirs(data_dir, exist_ok=True)
+        try:
+            os.makedirs(data_dir, exist_ok=True)
+        except PermissionError:
+            # In serverless environments, use in-memory storage
+            self._use_memory_storage = True
+            return
         
         # Initialize files if they don't exist
         self._init_files()
@@ -32,6 +43,20 @@ class AuthService:
             with open(self.sessions_file, 'w') as f:
                 json.dump({}, f)
     
+    def _validate_password_rules(self, password: str) -> Optional[str]:
+        """Standard manual-registration password rules. Returns error message or None if ok."""
+        if len(password) < 8:
+            return 'Password must be at least 8 characters'
+        if not re.search(r'[a-z]', password):
+            return 'Password must include a lowercase letter'
+        if not re.search(r'[A-Z]', password):
+            return 'Password must include an uppercase letter'
+        if not re.search(r'\d', password):
+            return 'Password must include a number'
+        if not re.search(r'[^A-Za-z0-9]', password):
+            return 'Password must include a special character (e.g. !@#$%)'
+        return None
+
     def _hash_password(self, password: str) -> str:
         """Hash password using SHA-256 with salt"""
         salt = secrets.token_hex(16)
@@ -48,20 +73,42 @@ class AuthService:
             return False
     
     def _load_users(self) -> Dict[str, Any]:
-        """Load users from file"""
+        """Load users from file or memory"""
+        print(f"🔍 AuthService - _load_users: using memory storage = {self._use_memory_storage}")
+        
+        if self._use_memory_storage:
+            print(f"🔍 AuthService - _load_users: returning memory users = {len(self._users)} users")
+            return self._users
+        
         try:
+            print(f"🔍 AuthService - _load_users: trying to read file {self.users_file}")
             with open(self.users_file, 'r') as f:
-                return json.load(f)
-        except (FileNotFoundError, json.JSONDecodeError):
+                users = json.load(f)
+                print(f"🔍 AuthService - _load_users: loaded {len(users)} users from file")
+                return users
+        except (FileNotFoundError, json.JSONDecodeError) as e:
+            print(f"🔍 AuthService - _load_users: file error = {e}")
             return {}
     
     def _save_users(self, users: Dict[str, Any]):
-        """Save users to file"""
-        with open(self.users_file, 'w') as f:
-            json.dump(users, f, indent=2)
+        """Save users to file or memory"""
+        if self._use_memory_storage:
+            self._users = users
+            return
+        
+        try:
+            with open(self.users_file, 'w') as f:
+                json.dump(users, f, indent=2)
+        except PermissionError:
+            # Fallback to memory storage
+            self._use_memory_storage = True
+            self._users = users
     
     def _load_sessions(self) -> Dict[str, Any]:
-        """Load sessions from file"""
+        """Load sessions from file or memory"""
+        if self._use_memory_storage:
+            return self._sessions
+        
         try:
             with open(self.sessions_file, 'r') as f:
                 return json.load(f)
@@ -69,12 +116,24 @@ class AuthService:
             return {}
     
     def _save_sessions(self, sessions: Dict[str, Any]):
-        """Save sessions to file"""
-        with open(self.sessions_file, 'w') as f:
-            json.dump(sessions, f, indent=2)
+        """Save sessions to file or memory"""
+        if self._use_memory_storage:
+            self._sessions = sessions
+            return
+        
+        try:
+            with open(self.sessions_file, 'w') as f:
+                json.dump(sessions, f, indent=2)
+        except PermissionError:
+            # Fallback to memory storage
+            self._use_memory_storage = True
+            self._sessions = sessions
     
     def register_user(self, username: str, email: str, password: str) -> Dict[str, Any]:
         """Register a new user"""
+        print(f"🔍 AuthService - Registering user: {username}")
+        print(f"🔍 AuthService - Using memory storage: {self._use_memory_storage}")
+        
         users = self._load_users()
         
         # Check if username already exists
@@ -99,11 +158,9 @@ class AuthService:
                 'message': 'Username must be at least 3 characters'
             }
         
-        if len(password) < 6:
-            return {
-                'success': False,
-                'message': 'Password must be at least 6 characters'
-            }
+        pwd_err = self._validate_password_rules(password)
+        if pwd_err:
+            return {'success': False, 'message': pwd_err}
         
         # Create new user
         user_data = {
@@ -183,6 +240,10 @@ class AuthService:
     
     def verify_token(self, token: str) -> Optional[Dict[str, Any]]:
         """Verify session token and return user data"""
+        if not token:
+            print(f"🔍 AuthService - No token provided")
+            return None
+            
         sessions = self._load_sessions()
         print(f"🔍 AuthService - Token: {token[:20]}...")
         print(f"🔍 AuthService - Sessions keys: {list(sessions.keys())[:3]}...")
@@ -261,10 +322,13 @@ class AuthService:
         
         # Check if user has already submitted today
         if user_data.get('last_daily_submission') == today:
+            history = user_data.get('submission_history', {}) or {}
+            submission = history.get(today)
             return {
-                'can_submit': False, 
+                'can_submit': False,
                 'message': 'You have already submitted today\'s daily challenge',
-                'daily_score': user_data.get('daily_scores', {}).get(today, {}).get('score', 0)
+                'daily_score': user_data.get('daily_scores', {}).get(today, {}).get('score', 0),
+                'submission': submission if isinstance(submission, dict) else None,
             }
         
         return {'can_submit': True, 'message': 'Ready to submit'}
@@ -313,6 +377,10 @@ class AuthService:
                 'poem_text': submission_data.get('poem_text', ''),
                 'poem_html': submission_data.get('poem_html', ''),
                 'ai_guess': submission_data.get('ai_guess', {}),
+                'theme_score': submission_data.get('theme_score'),
+                'emotion_score': submission_data.get('emotion_score'),
+                'creativity_score': submission_data.get('creativity_score'),
+                'ai_feedback': submission_data.get('ai_feedback', ''),
                 'submitted_at': datetime.now().isoformat()
             }
         

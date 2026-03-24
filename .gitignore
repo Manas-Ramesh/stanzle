@@ -67,6 +67,9 @@ temp/
 # Node modules (if any)
 node_modules/
 
+# Vite SPA intermediate output (build-spa.sh copies into public/)
+updatedDesign/dist/
+
 # Coverage reports
 htmlcov/
 .coverage
@@ -75,3 +78,4 @@ coverage.xml
 *.cover
 .hypothesis/
 .pytest_cache/
+.vercel

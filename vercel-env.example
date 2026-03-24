@@ -1,0 +1,38 @@
+# Vercel Environment Variables
+# Add these to your Vercel dashboard under Settings > Environment Variables
+
+# OpenAI Configuration
+OPENAI_API_KEY=your_openai_api_key_here
+OPENAI_MODEL=gpt-3.5-turbo
+OPENAI_MAX_TOKENS=300
+OPENAI_TEMPERATURE=0.7
+
+# Wordnik API Configuration
+WORDNIK_API_KEY=your_wordnik_api_key_here
+
+# Random Word API Configuration (no key required)
+RANDOM_WORD_API_URL=https://random-word-api.herokuapp.com/word
+
+# Server Configuration
+PORT=8000
+DEBUG=False
+HOST=0.0.0.0
+
+# Game Configuration
+MAX_POEM_LENGTH=1000
+MIN_POEM_LENGTH=10
+
+# CORS Configuration
+CORS_ORIGINS=*
+
+# After Google sign-in, redirect here (React dev server). Use your deployed SPA URL in production.
+# For legacy-only use on port 8000: FRONTEND_URL=http://localhost:8000
+FRONTEND_URL=http://localhost:5173
+
+# Google OAuth Configuration
+GOOGLE_CLIENT_ID=your_google_client_id_here
+GOOGLE_CLIENT_SECRET=your_google_client_secret_here
+
+# Flask Configuration
+FLASK_ENV=production
+SECRET_KEY=your_secret_key_here

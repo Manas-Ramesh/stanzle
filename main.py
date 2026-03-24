@@ -10,7 +10,7 @@ import sys
 import secrets
 import requests
 from datetime import datetime, timedelta
-from flask import Flask, render_template, request, jsonify, redirect, send_from_directory
+from flask import Flask, request, jsonify, redirect, send_from_directory, abort
 from flask_cors import CORS
 from dotenv import load_dotenv
 from functools import wraps
@@ -34,8 +34,12 @@ app = Flask(__name__,
             template_folder='public',
             static_url_path='')
 
-# Configure CORS
-CORS(app, origins=['http://localhost:3000', 'http://localhost:8000'])
+# Configure CORS for both local development and Vercel deployment
+cors_origins = os.getenv(
+    'CORS_ORIGINS',
+    'http://localhost:3000,http://localhost:5173,http://localhost:8000',
+).split(',')
+CORS(app, origins=cors_origins)
 
 # Initialize services
 wordnik_service = WordnikService()
@@ -65,50 +69,15 @@ def health():
     return jsonify({'status': 'OK'}), 200
 
 @app.route('/')
-def index():
-    """Serve the main game page or redirect to landing"""
-    # Check if user is authenticated
-    token = request.cookies.get('authToken')
-    print(f"🔍 Auth check - Token: {token[:20] if token else 'None'}...")
-    print(f"🔍 All cookies: {request.cookies}")
-    print(f"🔍 Request URL: {request.url}")
-    print(f"🔍 Request headers: {dict(request.headers)}")
-    
-    if not token:
-        print("🔍 No token found, serving landing page")
-        return render_template('landing.html')
-    
-    user = auth_service.verify_token(token)
-    print(f"🔍 User verification result: {user is not None}")
-    if user:
-        print(f"🔍 User data: {user}")
-    
-    if not user:
-        print("🔍 Token verification failed, serving landing page")
-        return render_template('landing.html')
-    
-    print(f"🔍 User authenticated successfully: {user.get('username', 'Unknown')}")
-    return render_template('index.html')
+def spa_index():
+    """Serve React SPA (Vite build copied to public/index.html)."""
+    return send_from_directory(app.static_folder, 'index.html')
 
 @app.route('/landing')
-def landing():
-    """Serve the landing page"""
-    return render_template('landing.html')
+def landing_page():
+    """Legacy HTML landing (optional bookmark). Main app is the SPA at /."""
+    return send_from_directory(app.static_folder, 'landing.html')
 
-@app.route('/unlimited')
-def unlimited():
-    """Serve the unlimited mode page"""
-    return render_template('unlimited.html')
-
-@app.route('/profile')
-def profile():
-    """Serve the profile page"""
-    return render_template('profile.html')
-
-@app.route('/<path:filename>')
-def serve_static(filename):
-    """Serve static files"""
-    return app.send_static_file(filename)
 
 # Authentication Routes
 @app.route('/api/auth/register', methods=['POST'])
@@ -258,7 +227,12 @@ def email_login():
 def google_login():
     """Initiate Google OAuth login"""
     client_id = os.getenv('GOOGLE_CLIENT_ID', '').strip()
-    redirect_uri = os.getenv('GOOGLE_REDIRECT_URI', 'http://localhost:8000/login/google/authorized').strip()
+    redirect_uri = os.getenv('GOOGLE_REDIRECT_URI', '').strip()
+    if not redirect_uri:
+        base_url = os.getenv('VERCEL_URL', 'http://localhost:8000')
+        if base_url and not str(base_url).startswith('http'):
+            base_url = f'https://{base_url}'
+        redirect_uri = f'{str(base_url).rstrip("/")}/login/google/authorized'
     
     # Create the authorization URL
     auth_url = (
@@ -378,7 +352,12 @@ def google_callback():
         code = request.args.get('code')
         client_id = os.getenv('GOOGLE_CLIENT_ID', '').strip()
         client_secret = os.getenv('GOOGLE_CLIENT_SECRET', '').strip()
-        redirect_uri = os.getenv('GOOGLE_REDIRECT_URI', 'http://localhost:8000/login/google/authorized').strip()
+        redirect_uri = os.getenv('GOOGLE_REDIRECT_URI', '').strip()
+        if not redirect_uri:
+            base_url = os.getenv('VERCEL_URL', 'http://localhost:8000')
+            if base_url and not str(base_url).startswith('http'):
+                base_url = f'https://{base_url}'
+            redirect_uri = f'{str(base_url).rstrip("/")}/login/google/authorized'
         
         if not code:
             return redirect('/landing?error=no_code')
@@ -449,12 +428,24 @@ def google_callback():
             
             print(f"🔍 Google OAuth: Created session token: {session_token[:20]}... for existing user: {username}")
             
-            # Set cookie and redirect to main page
-            response = redirect('/')
-            # Use secure=True for HTTPS in production, secure=False for localhost
-            is_production = os.getenv('GOOGLE_REDIRECT_URI', '').startswith('https://')
-            response.set_cookie('authToken', session_token, max_age=7*24*60*60, path='/', secure=is_production, httponly=False)
-            print(f"🔍 Google OAuth: Set cookie and redirecting to /")
+            # Same-origin SPA by default; FRONTEND_URL only if you run Vite on another origin in dev
+            frontend_url = os.getenv('FRONTEND_URL', '').strip().rstrip('/')
+            next_path = f'{frontend_url}/' if frontend_url else '/'
+            response = redirect(next_path)
+            cookie_secure = (
+                bool(os.getenv('VERCEL'))
+                or os.getenv('GOOGLE_REDIRECT_URI', '').strip().startswith('https://')
+                or (frontend_url.startswith('https://') if frontend_url else False)
+            )
+            response.set_cookie(
+                'authToken',
+                session_token,
+                max_age=7 * 24 * 60 * 60,
+                path='/',
+                secure=cookie_secure,
+                httponly=False,
+            )
+            print(f"🔍 Google OAuth: Set cookie and redirecting to {next_path}")
             return response
         else:
             # New user - redirect to username selection page
@@ -764,6 +755,20 @@ def track_challenge():
     except Exception as e:
         print(f"Error in track challenge endpoint: {e}")
         return jsonify({'success': False, 'error': 'Internal server error'}), 500
+
+
+@app.route('/<path:requested_path>')
+def static_or_spa(requested_path):
+    """Serve files from public/; unknown paths return SPA shell for client-side routes (/play, etc.)."""
+    if requested_path.startswith('api/'):
+        return jsonify({'error': 'Not found'}), 404
+    if '..' in requested_path or requested_path.startswith(('/', '\\')):
+        abort(404)
+    full_path = os.path.join(app.static_folder, requested_path)
+    if os.path.isfile(full_path):
+        return send_from_directory(app.static_folder, requested_path)
+    return send_from_directory(app.static_folder, 'index.html')
+
 
 if __name__ == '__main__':
     # Get configuration from environment
