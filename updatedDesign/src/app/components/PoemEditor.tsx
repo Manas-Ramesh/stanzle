@@ -36,9 +36,10 @@ function wordUsedInPoem(poemLower: string, word: string) {
   return poemLower.includes(word.toLowerCase());
 }
 
-function ensureStyleWithCss() {
+/** Semantic &lt;b&gt;/&lt;i&gt;/&lt;u&gt; toggle more reliably than CSS spans for execCommand. */
+function ensureSemanticInlineCommands() {
   try {
-    document.execCommand("styleWithCSS", false, "true");
+    document.execCommand("styleWithCSS", false, "false");
   } catch {
     /* ignore */
   }
@@ -61,6 +62,10 @@ export function PoemEditor({
   const [activeItalic, setActiveItalic] = useState(false);
   const [activeUnderline, setActiveUnderline] = useState(false);
   const [activeStrike, setActiveStrike] = useState(false);
+
+  useEffect(() => {
+    ensureSemanticInlineCommands();
+  }, []);
 
   const stashSelection = useCallback(() => {
     const sel = window.getSelection();
@@ -100,11 +105,9 @@ export function PoemEditor({
   const refreshCommandState = useCallback(() => {
     const ed = editorRef.current;
     const sel = window.getSelection();
+    // While focus is on the toolbar, the selection anchor can leave the editor briefly.
+    // Do not reset toggles to false — that made Bold look "off" while text was still bold.
     if (!ed || !sel?.anchorNode || !ed.contains(sel.anchorNode)) {
-      setActiveBold(false);
-      setActiveItalic(false);
-      setActiveUnderline(false);
-      setActiveStrike(false);
       return;
     }
     setActiveBold(document.queryCommandState("bold"));
@@ -195,11 +198,16 @@ export function PoemEditor({
       restorePendingSelection();
       focusEditor();
       try {
+        ensureSemanticInlineCommands();
         document.execCommand(command, false);
       } catch {
         /* ignore */
       }
-      syncFromDom();
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          syncFromDom();
+        });
+      });
     },
     [restorePendingSelection, syncFromDom],
   );
@@ -208,42 +216,25 @@ export function PoemEditor({
     const stack = FONT_STACKS[family] ?? family;
     restorePendingSelection();
     applyInlineStyles({ fontFamily: stack });
-    syncFromDom();
+    requestAnimationFrame(() => syncFromDom());
   };
 
   const applyFontSize = (px: string) => {
     restorePendingSelection();
-    applyInlineStyles({ fontSize: px });
-    syncFromDom();
+    applyInlineStyles({ fontSize: px, lineHeight: "1.5" });
+    requestAnimationFrame(() => syncFromDom());
   };
 
   const applyForeColor = (hex: string) => {
     restorePendingSelection();
-    ensureStyleWithCss();
-    try {
-      document.execCommand("foreColor", false, hex);
-    } catch {
-      applyInlineStyles({ color: hex });
-    }
-    syncFromDom();
+    applyInlineStyles({ color: hex });
+    requestAnimationFrame(() => syncFromDom());
   };
 
   const applyBackColor = (hex: string) => {
     restorePendingSelection();
-    ensureStyleWithCss();
-    const useHilite =
-      typeof document.queryCommandSupported === "function" &&
-      document.queryCommandSupported("hiliteColor");
-    try {
-      if (useHilite) {
-        document.execCommand("hiliteColor", false, hex);
-      } else {
-        document.execCommand("backColor", false, hex);
-      }
-    } catch {
-      applyInlineStyles({ backgroundColor: hex });
-    }
-    syncFromDom();
+    applyInlineStyles({ backgroundColor: hex });
+    requestAnimationFrame(() => syncFromDom());
   };
 
   const handleFind = () => {
@@ -376,6 +367,7 @@ export function PoemEditor({
           <select
             className="px-2 py-1 text-sm border border-gray-300 rounded bg-white text-gray-700 focus:outline-none focus:border-gray-500 max-w-[7rem]"
             defaultValue="Inter"
+            onMouseDown={() => stashSelection()}
             onChange={(e) => {
               applyFontFamily(e.target.value);
             }}
@@ -389,6 +381,7 @@ export function PoemEditor({
           <select
             className="px-2 py-1 text-sm border border-gray-300 rounded bg-white text-gray-700 focus:outline-none focus:border-gray-500"
             defaultValue="16px"
+            onMouseDown={() => stashSelection()}
             onChange={(e) => {
               applyFontSize(e.target.value);
             }}
@@ -483,7 +476,7 @@ export function PoemEditor({
           type="color"
           className="absolute -left-[9999px] w-8 h-8 opacity-0"
           defaultValue="#111827"
-          onChange={(e) => applyForeColor(e.target.value)}
+          onInput={(e) => applyForeColor((e.target as HTMLInputElement).value)}
           aria-label="Text color"
         />
         <input
@@ -491,7 +484,7 @@ export function PoemEditor({
           type="color"
           className="absolute -left-[9999px] w-8 h-8 opacity-0"
           defaultValue="#fef08a"
-          onChange={(e) => applyBackColor(e.target.value)}
+          onInput={(e) => applyBackColor((e.target as HTMLInputElement).value)}
           aria-label="Highlight color"
         />
 
@@ -516,11 +509,11 @@ export function PoemEditor({
             syncFromDom();
           }}
           className={cn(
-            "poem-editor-area relative w-full min-h-[300px] p-4 bg-white border-2 border-t-0 border-gray-300 rounded-b resize-y overflow-auto focus:outline-none focus:border-gray-900 text-gray-900",
+            "poem-editor-area relative w-full min-h-[300px] p-4 bg-white border-2 border-t-0 border-gray-300 rounded-b resize-y overflow-auto focus:outline-none focus:border-gray-900 text-base text-gray-900",
             showPlaceholder &&
               "before:content-[attr(data-placeholder)] before:absolute before:top-4 before:left-4 before:text-gray-400 before:pointer-events-none",
           )}
-          style={{ fontFamily: "Inter, system-ui, sans-serif", fontSize: "16px" }}
+          style={{ fontFamily: "Inter, system-ui, sans-serif" }}
         />
       </div>
     </div>
