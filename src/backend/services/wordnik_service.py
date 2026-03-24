@@ -6,7 +6,9 @@ Handles Wordnik API integration for random words, themes, and emotions
 import requests
 import random
 import os
-from typing import List, Dict, Any
+import hashlib
+from datetime import date as date_cls
+from typing import List, Dict, Any, Optional
 
 class WordnikService:
     def __init__(self):
@@ -95,6 +97,22 @@ class WordnikService:
         ]
         return random.choice(fallback_words)
 
+    def _deterministic_fallback_words(self, rng: random.Random) -> List[str]:
+        """Pick a stable fallback word set for a seeded RNG."""
+        fallback_words = [
+            ['mountain', 'journey', 'discover', 'freedom'],
+            ['heart', 'soul', 'passion', 'forever'],
+            ['tree', 'wind', 'ocean', 'sky'],
+            ['sleep', 'dream', 'reality', 'awake'],
+            ['clock', 'moment', 'eternity', 'now'],
+            ['light', 'dark', 'shine', 'bright'],
+            ['tear', 'smile', 'memory', 'goodbye'],
+            ['bird', 'cage', 'fly', 'free'],
+            ['river', 'stone', 'whisper', 'dance'],
+            ['shadow', 'light', 'breath', 'song']
+        ]
+        return list(rng.choice(fallback_words))
+
     def get_random_theme(self) -> str:
         """Get a random theme"""
         return random.choice(self.theme_words).title()
@@ -129,12 +147,19 @@ class WordnikService:
         
         return definitions
 
-    def generate_daily_challenge(self) -> Dict[str, Any]:
-        """Generate a complete daily challenge with words, theme, and emotion"""
-        words = self.get_random_words(4)
-        theme = self.get_random_theme()
-        emotion = self.get_random_emotion()
-        
+    def generate_daily_challenge(self, target_date: Optional[str] = None) -> Dict[str, Any]:
+        """
+        Generate a deterministic daily challenge for a date (YYYY-MM-DD).
+        This keeps the prompt identical for everyone even without persistent storage.
+        """
+        day = (target_date or date_cls.today().isoformat()).strip()
+        seed_hex = hashlib.sha256(day.encode("utf-8")).hexdigest()[:16]
+        rng = random.Random(int(seed_hex, 16))
+
+        words = self._deterministic_fallback_words(rng)
+        theme = rng.choice(self.theme_words).title()
+        emotion = rng.choice(self.emotion_words).title()
+
         return {
             'words': words,
             'theme': theme,

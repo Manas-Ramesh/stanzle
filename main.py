@@ -555,12 +555,21 @@ def google_callback():
 
 @app.route('/api/challenge', methods=['GET'])
 def get_daily_challenge():
-    """Get a new daily challenge"""
+    """Get today's global daily challenge (same for everyone)."""
     try:
-        challenge = wordnik_service.generate_daily_challenge()
-        
-        # Track the challenge for archive purposes
-        challenge_tracker.track_challenge(challenge)
+        today = datetime.now().strftime('%Y-%m-%d')
+        existing = challenge_tracker.get_challenge_by_date(today) or {}
+        if existing.get('theme') and existing.get('emotion') and existing.get('words'):
+            challenge = {
+                'theme': existing.get('theme'),
+                'emotion': existing.get('emotion'),
+                'words': existing.get('words', []),
+            }
+        else:
+            # Deterministic-by-date fallback keeps daily prompt stable even without persistent storage.
+            challenge = wordnik_service.generate_daily_challenge(today)
+            # Save once per date when storage is available.
+            challenge_tracker.track_challenge(challenge)
         
         return jsonify({
             'success': True,
