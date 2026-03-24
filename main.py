@@ -110,10 +110,11 @@ cors_origins = [o.strip() for o in _cors_raw.split(",") if o.strip()]
 CORS(app, origins=cors_origins)
 
 # Initialize services
+DATA_DIR = os.getenv("DATA_DIR", "data")
 wordnik_service = WordnikService()
 openai_service = OpenAIService()
-auth_service = AuthService()
-challenge_tracker = ChallengeTracker()
+auth_service = AuthService(DATA_DIR)
+challenge_tracker = ChallengeTracker(DATA_DIR)
 
 # Authentication decorator
 def require_auth(f):

@@ -14,12 +14,21 @@ class ChallengeTracker:
         self.data_dir = data_dir
         self.challenges_file = os.path.join(data_dir, "daily_challenges.json")
         self.challenges_csv = os.path.join(data_dir, "daily_challenges.csv")
+        self._use_memory_storage = False
+        self._challenges = {}
         
         # Create data directory if it doesn't exist
-        os.makedirs(data_dir, exist_ok=True)
+        try:
+            os.makedirs(data_dir, exist_ok=True)
+        except PermissionError:
+            self._use_memory_storage = True
+            return
         
         # Initialize files if they don't exist
-        self._init_files()
+        try:
+            self._init_files()
+        except PermissionError:
+            self._use_memory_storage = True
     
     def _init_files(self):
         """Initialize tracking files if they don't exist"""
@@ -122,6 +131,8 @@ class ChallengeTracker:
     
     def _load_challenges(self) -> Dict[str, Any]:
         """Load challenges from JSON file"""
+        if self._use_memory_storage:
+            return self._challenges
         try:
             with open(self.challenges_file, 'r') as f:
                 return json.load(f)
@@ -130,8 +141,15 @@ class ChallengeTracker:
     
     def _save_challenges(self, challenges: Dict[str, Any]):
         """Save challenges to JSON file"""
-        with open(self.challenges_file, 'w') as f:
-            json.dump(challenges, f, indent=2)
+        if self._use_memory_storage:
+            self._challenges = challenges
+            return
+        try:
+            with open(self.challenges_file, 'w') as f:
+                json.dump(challenges, f, indent=2)
+        except PermissionError:
+            self._use_memory_storage = True
+            self._challenges = challenges
     
     def _append_to_csv(self, challenge_record: Dict[str, Any]):
         """Append challenge record to CSV file"""

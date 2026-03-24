@@ -35,13 +35,17 @@ class AuthService:
     
     def _init_files(self):
         """Initialize data files if they don't exist"""
-        if not os.path.exists(self.users_file):
-            with open(self.users_file, 'w') as f:
-                json.dump({}, f)
-        
-        if not os.path.exists(self.sessions_file):
-            with open(self.sessions_file, 'w') as f:
-                json.dump({}, f)
+        try:
+            if not os.path.exists(self.users_file):
+                with open(self.users_file, 'w') as f:
+                    json.dump({}, f)
+            
+            if not os.path.exists(self.sessions_file):
+                with open(self.sessions_file, 'w') as f:
+                    json.dump({}, f)
+        except PermissionError:
+            # Keep service alive even if mounted volume path is not writable.
+            self._use_memory_storage = True
     
     def _validate_password_rules(self, password: str) -> Optional[str]:
         """Standard manual-registration password rules. Returns error message or None if ok."""
@@ -86,7 +90,7 @@ class AuthService:
                 users = json.load(f)
                 print(f"🔍 AuthService - _load_users: loaded {len(users)} users from file")
                 return users
-        except (FileNotFoundError, json.JSONDecodeError) as e:
+        except (FileNotFoundError, json.JSONDecodeError, PermissionError) as e:
             print(f"🔍 AuthService - _load_users: file error = {e}")
             return {}
     
@@ -112,7 +116,7 @@ class AuthService:
         try:
             with open(self.sessions_file, 'r') as f:
                 return json.load(f)
-        except (FileNotFoundError, json.JSONDecodeError):
+        except (FileNotFoundError, json.JSONDecodeError, PermissionError):
             return {}
     
     def _save_sessions(self, sessions: Dict[str, Any]):
