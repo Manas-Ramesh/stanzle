@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router";
+import { useLocation, useNavigate } from "react-router";
 import { toast } from "sonner";
 import { useAuth } from "@/context/AuthContext";
 import { apiFetch, getAuthToken, getBackendOrigin } from "@/lib/api";
@@ -15,6 +15,7 @@ function formatHeaderDate() {
 }
 
 export function HomePage() {
+  const location = useLocation();
   const navigate = useNavigate();
   const { user, loading, login, register, logout } = useAuth();
   const [mode, setMode] = useState<"login" | "register">("login");
@@ -23,6 +24,13 @@ export function HomePage() {
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
   const [dailyDone, setDailyDone] = useState(false);
+
+  useEffect(() => {
+    const modeParam = new URLSearchParams(location.search).get("mode");
+    if (modeParam === "login" || modeParam === "register") {
+      setMode(modeParam);
+    }
+  }, [location.search]);
 
   useEffect(() => {
     if (!user || !getAuthToken()) {
@@ -107,6 +115,14 @@ export function HomePage() {
                   Register
                 </button>
               </div>
+              <button
+                type="button"
+                onClick={handlePlay}
+                className="w-full px-8 py-3 bg-gray-900 text-white font-bold rounded-full hover:bg-gray-800 transition-colors"
+              >
+                Play Daily as Guest
+              </button>
+
               <button
                 type="button"
                 onClick={() => {

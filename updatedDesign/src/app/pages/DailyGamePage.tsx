@@ -90,6 +90,7 @@ export function DailyGamePage() {
   const [submitting, setSubmitting] = useState(false);
   const [guess, setGuess] = useState<AiGuess | null>(null);
   const [scores, setScores] = useState<ScoreResult | null>(null);
+  const [guestPromptOpen, setGuestPromptOpen] = useState(false);
 
   const [todayStatus, setTodayStatus] = useState<{
     loading: boolean;
@@ -193,24 +194,23 @@ export function DailyGamePage() {
     }
 
     const token = getAuthToken();
-    if (!token) {
-      toast.error("Log in to submit your daily score.");
-      return;
-    }
+    const isGuest = !token;
 
-    try {
-      const status = await apiFetch<{
-        can_submit?: boolean;
-        message?: string;
-      }>("/api/daily/submission-status", { method: "GET" });
+    if (!isGuest) {
+      try {
+        const status = await apiFetch<{
+          can_submit?: boolean;
+          message?: string;
+        }>("/api/daily/submission-status", { method: "GET" });
 
-      if (!status.can_submit) {
-        toast.error(status.message || "You cannot submit today.");
+        if (!status.can_submit) {
+          toast.error(status.message || "You cannot submit today.");
+          return;
+        }
+      } catch (e) {
+        toast.error(e instanceof Error ? e.message : "Could not check submission status");
         return;
       }
-    } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Could not check submission status");
-      return;
     }
 
     setSubmitting(true);
@@ -227,37 +227,44 @@ export function DailyGamePage() {
       );
       const total = normalizeTotalScore(s, difficulty, selectedPrompt);
 
-      await apiFetch("/api/daily/submit", {
-        method: "POST",
-        body: JSON.stringify({
-          score: total,
-          mode: difficulty,
-          easy_selection: difficulty === "easy" ? selectedPrompt : null,
-          word_bank_used: wordBankEnabled,
-          theme: challenge.theme,
-          emotion: challenge.emotion,
-          required_words: challenge.words,
-          poem_text: trimmed,
-          poem_html: trimmed.replace(/\n/g, "<br/>"),
-          ai_guess: g,
-          theme_score: s.themeScore ?? 0,
-          emotion_score: s.emotionScore ?? 0,
-          creativity_score: s.creativityScore ?? 0,
-          ai_feedback: s.feedback ?? "",
-        }),
-      });
+      if (!isGuest) {
+        await apiFetch("/api/daily/submit", {
+          method: "POST",
+          body: JSON.stringify({
+            score: total,
+            mode: difficulty,
+            easy_selection: difficulty === "easy" ? selectedPrompt : null,
+            word_bank_used: wordBankEnabled,
+            theme: challenge.theme,
+            emotion: challenge.emotion,
+            required_words: challenge.words,
+            poem_text: trimmed,
+            poem_html: trimmed.replace(/\n/g, "<br/>"),
+            ai_guess: g,
+            theme_score: s.themeScore ?? 0,
+            emotion_score: s.emotionScore ?? 0,
+            creativity_score: s.creativityScore ?? 0,
+            ai_feedback: s.feedback ?? "",
+          }),
+        });
+      }
 
       setGuess(g);
       setScores(s);
       setHasSubmitted(true);
-      setTodayStatus({
-        loading: false,
-        submitted: true,
-        submission: null,
-        score: total,
-      });
-      void refreshUser();
-      toast.success("Daily score submitted!");
+      if (!isGuest) {
+        setTodayStatus({
+          loading: false,
+          submitted: true,
+          submission: null,
+          score: total,
+        });
+        void refreshUser();
+        toast.success("Daily score submitted!");
+      } else {
+        setGuestPromptOpen(true);
+        toast.success("Daily score ready. Log in to save it.");
+      }
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Something went wrong");
     } finally {
@@ -303,26 +310,61 @@ export function DailyGamePage() {
         ? "—"
         : String(guess.emotion ?? "—");
 
+    const isGuestResult = !user || !getAuthToken();
     return (
-      <ScoreDisplay
-        themeScore={scores.themeScore ?? 0}
-        emotionScore={scores.emotionScore ?? 0}
-        creativityScore={scores.creativityScore ?? 0}
-        totalScore={total}
-        showScoreBreakdown
-        aiAnalysis={{
-          guessedTheme,
-          guessedEmotion,
-          confidence: confidencePercent(guess.confidence),
-          feedback,
-        }}
-        poemText={poemText}
-        wordBank={wordBankEnabled ? challenge.words : undefined}
-        difficulty={difficulty}
-        selectedPrompt={selectedPrompt}
-        isDaily
-        hasCompletedDaily
-      />
+      <div className="relative">
+        <ScoreDisplay
+          themeScore={scores.themeScore ?? 0}
+          emotionScore={scores.emotionScore ?? 0}
+          creativityScore={scores.creativityScore ?? 0}
+          totalScore={total}
+          showScoreBreakdown
+          aiAnalysis={{
+            guessedTheme,
+            guessedEmotion,
+            confidence: confidencePercent(guess.confidence),
+            feedback,
+          }}
+          poemText={poemText}
+          wordBank={wordBankEnabled ? challenge.words : undefined}
+          difficulty={difficulty}
+          selectedPrompt={selectedPrompt}
+          isDaily
+          hasCompletedDaily={!isGuestResult}
+        />
+        {isGuestResult && guestPromptOpen && (
+          <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center px-4">
+            <div className="w-full max-w-md rounded-xl border-2 border-gray-300 bg-white p-6 space-y-4">
+              <h3 className="text-xl font-bold text-gray-900">Save this score</h3>
+              <p className="text-sm text-gray-600">
+                Guest plays are daily-only and won’t be saved. Log in or create an account to
+                keep results and unlock Unlimited mode.
+              </p>
+              <div className="flex flex-col gap-2">
+                <Link
+                  to="/?mode=register"
+                  className="w-full text-center px-4 py-2.5 bg-gray-900 text-white font-semibold rounded-full hover:bg-gray-800 transition-colors"
+                >
+                  Create account
+                </Link>
+                <Link
+                  to="/?mode=login"
+                  className="w-full text-center px-4 py-2.5 border-2 border-gray-900 text-gray-900 font-semibold rounded-full hover:bg-gray-50 transition-colors"
+                >
+                  Log in
+                </Link>
+                <button
+                  type="button"
+                  onClick={() => setGuestPromptOpen(false)}
+                  className="w-full text-center px-4 py-2 text-sm text-gray-600 underline"
+                >
+                  Continue as guest
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
     );
   }
 
@@ -370,7 +412,7 @@ export function DailyGamePage() {
         <div className="space-y-6">
           {!user && (
             <p className="text-sm text-amber-800 bg-amber-50 border border-amber-200 rounded px-3 py-2">
-              Log in from the home page to save your daily score.
+              Guest mode: you can play daily and see your score, but it won’t be saved.
             </p>
           )}
           <GameSettings
