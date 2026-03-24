@@ -4,6 +4,7 @@ import { DailyGamePage } from "./pages/DailyGamePage";
 import { UnlimitedModePage } from "./pages/UnlimitedModePage";
 import { ProgressPage } from "./pages/ProgressPage";
 import { AdminPage } from "./pages/AdminPage";
+import { LeaderboardPage } from "./pages/LeaderboardPage";
 import { Root } from "./Root";
 
 export const router = createBrowserRouter([
@@ -12,6 +13,7 @@ export const router = createBrowserRouter([
     Component: Root,
     children: [
       { index: true, Component: HomePage },
+      { path: "leaderboard", Component: LeaderboardPage },
       { path: "play", Component: DailyGamePage },
       { path: "unlimited", Component: UnlimitedModePage },
       { path: "progress", Component: ProgressPage },

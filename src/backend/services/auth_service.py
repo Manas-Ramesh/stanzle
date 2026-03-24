@@ -477,6 +477,60 @@ class AuthService:
             'total_submissions': len(submission_history)
         }
 
+    def _user_daily_score_on_date(self, user_data: Dict[str, Any], day: str) -> Optional[int]:
+        """Score for a calendar day if the user submitted the daily that day."""
+        hist = user_data.get("submission_history") or {}
+        if day in hist and isinstance(hist[day], dict):
+            s = hist[day].get("score")
+            if s is not None:
+                try:
+                    return int(s)
+                except (TypeError, ValueError):
+                    pass
+        ds = (user_data.get("daily_scores") or {}).get(day)
+        if isinstance(ds, dict) and ds.get("submitted"):
+            s = ds.get("score")
+            if s is not None:
+                try:
+                    return int(s)
+                except (TypeError, ValueError):
+                    pass
+        return None
+
+    def get_daily_leaderboard_for_date(self, target_date: Optional[str] = None) -> Dict[str, Any]:
+        """
+        Everyone tied for the highest score on the given day (default: today, server local time).
+        """
+        day = (target_date or datetime.now().strftime("%Y-%m-%d")).strip()
+        users = self._load_users()
+        entries: List[Dict[str, Any]] = []
+        for username, u in users.items():
+            score = self._user_daily_score_on_date(u, day)
+            if score is None:
+                continue
+            entries.append({"username": username, "score": score})
+        submission_count = len(entries)
+        if not entries:
+            return {
+                "success": True,
+                "date": day,
+                "top_score": None,
+                "leaders": [],
+                "submission_count": 0,
+            }
+        top = max(e["score"] for e in entries)
+        leaders = sorted(
+            [e for e in entries if e["score"] == top],
+            key=lambda x: x["username"].lower(),
+        )
+        return {
+            "success": True,
+            "date": day,
+            "top_score": top,
+            "leaders": leaders,
+            "submission_count": submission_count,
+        }
+
     def count_active_sessions(self) -> int:
         """Non-expired sessions (excludes pending Google username setup)."""
         sessions = self._load_sessions()

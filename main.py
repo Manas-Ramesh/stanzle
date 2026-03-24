@@ -729,6 +729,17 @@ def get_daily_submission_status():
         print(f"Error in daily submission status endpoint: {e}")
         return jsonify({'success': False, 'error': 'Internal server error'}), 500
 
+
+@app.route("/api/daily/leaderboard", methods=["GET"])
+def daily_leaderboard():
+    """Public: today's daily challenge — users tied for the highest score (all shown)."""
+    try:
+        return jsonify(auth_service.get_daily_leaderboard_for_date())
+    except Exception as e:
+        print(f"Error in daily leaderboard: {e}")
+        return jsonify({"success": False, "error": "Internal server error"}), 500
+
+
 @app.route('/api/daily/submit', methods=['POST'])
 @require_auth
 def submit_daily_score():
