@@ -30,10 +30,9 @@ COPY . .
 # Create data directory
 RUN mkdir -p data
 
-# Create non-root user
-RUN adduser --disabled-password --gecos '' appuser \
-    && chown -R appuser:appuser /app
-USER appuser
+# Railway volume mounts can be owned by root; run as root so /data stays writable
+# across redeploys when using mounted persistent volumes.
+USER root
 
 # Expose port
 EXPOSE 8000
