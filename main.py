@@ -9,6 +9,7 @@ import re
 import sys
 import secrets
 import requests
+from urllib.parse import urlencode, urlparse
 from datetime import datetime, timedelta
 from flask import Flask, request, jsonify, redirect, send_from_directory, abort
 from flask_cors import CORS
@@ -17,6 +18,15 @@ from functools import wraps
 
 # Load environment variables
 load_dotenv()
+
+
+def _url_origin(url: str) -> str:
+    p = urlparse(url)
+    if not p.netloc:
+        return ""
+    scheme = p.scheme or "https"
+    return f"{scheme}://{p.netloc}"
+
 
 # Add current directory to Python path
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
@@ -428,9 +438,18 @@ def google_callback():
             
             print(f"🔍 Google OAuth: Created session token: {session_token[:20]}... for existing user: {username}")
             
-            # Same-origin SPA by default; FRONTEND_URL only if you run Vite on another origin in dev
+            # Same-origin: cookie works. Split hosting (SPA on host A, API on host B): cookie stays on API
+            # host — pass session token in URL once so the SPA can store it in localStorage.
             frontend_url = os.getenv('FRONTEND_URL', '').strip().rstrip('/')
-            next_path = f'{frontend_url}/' if frontend_url else '/'
+            api_origin = _url_origin(request.base_url)
+            if frontend_url:
+                fe_origin = _url_origin(frontend_url if "://" in frontend_url else f"https://{frontend_url}")
+                if fe_origin and fe_origin != api_origin:
+                    next_path = f'{frontend_url}/?{urlencode({"authToken": session_token})}'
+                else:
+                    next_path = f'{frontend_url}/'
+            else:
+                next_path = '/'
             response = redirect(next_path)
             cookie_secure = (
                 bool(os.getenv('VERCEL'))
