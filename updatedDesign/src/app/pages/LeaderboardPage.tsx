@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router";
-import { Trophy } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { apiFetch } from "@/lib/api";
 
@@ -41,17 +40,12 @@ export function LeaderboardPage() {
   return (
     <div className="min-h-[calc(100vh-3.5rem)] bg-white">
       <div className="max-w-xl mx-auto px-4 py-10">
-        <div className="flex items-start gap-3 mb-2">
-          <div className="mt-0.5 rounded-lg bg-amber-100 p-2">
-            <Trophy className="w-6 h-6 text-amber-800" aria-hidden />
-          </div>
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900">Daily leaderboard</h1>
-            <p className="text-sm text-gray-600 mt-1">
-              Highest score for today&apos;s official daily challenge. Ties share the top spot — everyone
-              at that score is listed.
-            </p>
-          </div>
+        <div className="mb-2 text-center sm:text-left">
+          <h1 className="text-2xl font-bold text-gray-900">Daily leaderboard</h1>
+          <p className="text-sm text-gray-600 mt-2">
+            Highest score for today&apos;s official daily challenge. Ties share the top spot — everyone
+            at that score is listed.
+          </p>
         </div>
 
         {loading && <p className="text-gray-500 text-sm py-8">Loading…</p>}

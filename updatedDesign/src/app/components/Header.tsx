@@ -73,18 +73,10 @@ export function Header() {
   return (
     <header className="border-b border-gray-300 bg-white">
       <div className="max-w-4xl mx-auto px-4">
-        <div className="flex items-center justify-between h-14 gap-4">
-          <div className="flex items-center gap-5 min-w-0">
-            <Link to="/" className="flex items-center gap-2 shrink-0">
-              <h1 className="text-3xl font-bold text-gray-900 tracking-tight">Stanzle</h1>
-            </Link>
-            <Link
-              to="/leaderboard"
-              className="text-sm font-medium text-gray-600 hover:text-gray-900 whitespace-nowrap truncate"
-            >
-              Leaderboard
-            </Link>
-          </div>
+        <div className="flex items-center justify-between h-14">
+          <Link to="/" className="flex items-center gap-2">
+            <h1 className="text-3xl font-bold text-gray-900 tracking-tight">Stanzle</h1>
+          </Link>
 
           {user ? (
             <DropdownMenu onOpenChange={(open) => open && measureTriggerWidth()}>

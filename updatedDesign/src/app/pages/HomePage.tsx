@@ -1,5 +1,5 @@
 import { useEffect, useId, useState } from "react";
-import { useLocation, useNavigate } from "react-router";
+import { Link, useLocation, useNavigate } from "react-router";
 import { toast } from "sonner";
 import { useAuth } from "@/context/AuthContext";
 import { apiFetch, getAuthToken, getBackendOrigin } from "@/lib/api";
@@ -118,13 +118,21 @@ export function HomePage() {
                   Register
                 </button>
               </div>
-              <button
-                type="button"
-                onClick={handlePlay}
-                className="w-full px-8 py-3 bg-gray-900 text-white font-bold rounded-full hover:bg-gray-800 transition-colors"
-              >
-                Play Daily as Guest
-              </button>
+              <div className="flex flex-wrap justify-center gap-3 -translate-x-1">
+                <button
+                  type="button"
+                  onClick={handlePlay}
+                  className="px-8 py-3 bg-gray-900 text-white font-bold rounded-full hover:bg-gray-800 transition-colors"
+                >
+                  Play Daily as Guest
+                </button>
+                <Link
+                  to="/leaderboard"
+                  className="inline-flex items-center justify-center px-8 py-3 bg-gray-900 text-white font-bold rounded-full hover:bg-gray-800 transition-colors"
+                >
+                  Leaderboard
+                </Link>
+              </div>
 
               <button
                 type="button"
@@ -246,16 +254,24 @@ export function HomePage() {
             </div>
           ) : (
             <div className="flex flex-col items-center gap-4">
-              <button
-                type="button"
-                onClick={handlePlay}
-                className="px-8 py-3 bg-gray-900 text-white font-bold rounded-full hover:bg-gray-800 transition-colors"
-              >
-                {dailyDone ? "View daily challenge" : "Play"}
-              </button>
+              <div className="flex flex-wrap justify-center gap-3 -translate-x-1 sm:-translate-x-2">
+                <button
+                  type="button"
+                  onClick={handlePlay}
+                  className="px-8 py-3 bg-gray-900 text-white font-bold rounded-full hover:bg-gray-800 transition-colors"
+                >
+                  {dailyDone ? "View daily challenge" : "Play"}
+                </button>
+                <Link
+                  to="/leaderboard"
+                  className="inline-flex items-center justify-center px-8 py-3 bg-gray-900 text-white font-bold rounded-full hover:bg-gray-800 transition-colors"
+                >
+                  Leaderboard
+                </Link>
+              </div>
               <p className="text-sm text-gray-500">
                 {dailyDone
-                  ? "You already submitted today — open the daily page for links to Unlimited mode and progress."
+                  ? "You already submitted today — View daily challenge for your results; Leaderboard shows today’s top scores."
                   : "Solve today’s challenge and submit your score."}
               </p>
               <button
