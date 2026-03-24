@@ -133,6 +133,51 @@ def require_auth(f):
         return f(*args, **kwargs)
     return decorated_function
 
+
+def _admin_username_set():
+    raw = os.getenv("ADMIN_USERNAMES", "").strip()
+    return {x.strip().lower() for x in raw.split(",") if x.strip()}
+
+
+def _is_admin_username(username: str) -> bool:
+    if not username:
+        return False
+    return username.strip().lower() in _admin_username_set()
+
+
+def require_admin(f):
+    """Bearer session for a user in ADMIN_USERNAMES, or X-Admin-Key matching ADMIN_API_KEY."""
+
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        api_key = os.getenv("ADMIN_API_KEY", "").strip()
+        if api_key and request.headers.get("X-Admin-Key") == api_key:
+            request.admin_user = {"username": "__admin_key__", "via": "api_key"}
+            return f(*args, **kwargs)
+
+        admins = _admin_username_set()
+        if not admins:
+            return jsonify(
+                {
+                    "error": "Admin access is not configured "
+                    "(set ADMIN_USERNAMES and log in, or set ADMIN_API_KEY with X-Admin-Key header)",
+                }
+            ), 503
+
+        token = request.headers.get("Authorization", "").replace("Bearer ", "")
+        if not token:
+            token = request.cookies.get("authToken")
+        user = auth_service.verify_token(token)
+        if not user:
+            return jsonify({"error": "Authentication required"}), 401
+        if not _is_admin_username(user.get("username", "")):
+            return jsonify({"error": "Forbidden"}), 403
+        request.admin_user = user
+        return f(*args, **kwargs)
+
+    return decorated_function
+
+
 @app.route('/health')
 def health():
     """Health check endpoint for Railway and other monitoring"""
@@ -188,6 +233,9 @@ def login():
             }), 400
         
         result = auth_service.login_user(username, password)
+        if result.get("success") and isinstance(result.get("user"), dict):
+            u = result["user"]
+            result["user"] = {**u, "is_admin": _is_admin_username(u.get("username", ""))}
         return jsonify(result)
     except Exception as e:
         return jsonify({
@@ -219,10 +267,8 @@ def logout():
 @require_auth
 def verify():
     """Verify user token"""
-    return jsonify({
-        'success': True,
-        'user': request.user
-    })
+    u = {**request.user, "is_admin": _is_admin_username(request.user.get("username", ""))}
+    return jsonify({"success": True, "user": u})
 
 @app.route('/api/auth/email-login', methods=['POST'])
 def email_login():
@@ -270,18 +316,20 @@ def email_login():
         auth_service._save_sessions(sessions)
         print(f"🔍 Email login - Saved session for {username}")
         
+        u_email = {
+            'username': username,
+            'email': email,
+            'created_at': users[username]['created_at'],
+            'games_played': users[username]['games_played'],
+            'total_score': users[username]['total_score'],
+            'best_score': users[username]['best_score'],
+            'is_admin': _is_admin_username(username),
+        }
         response = jsonify({
             'success': True,
             'message': 'Login successful',
             'token': session_token,
-            'user': {
-                'username': username,
-                'email': email,
-                'created_at': users[username]['created_at'],
-                'games_played': users[username]['games_played'],
-                'total_score': users[username]['total_score'],
-                'best_score': users[username]['best_score']
-            }
+            'user': u_email,
         })
         
         # Set the cookie
@@ -381,18 +429,20 @@ def setup_google_user():
         
         print(f"🔍 Google user setup: Created user {username}")
         
+        u_out = {
+            'username': username,
+            'email': user_data['email'],
+            'created_at': user_data['created_at'],
+            'games_played': user_data['games_played'],
+            'total_score': user_data['total_score'],
+            'best_score': user_data['best_score'],
+            'is_admin': _is_admin_username(username),
+        }
         response = jsonify({
             'success': True,
             'message': 'Account created successfully',
             'token': session_token,
-            'user': {
-                'username': username,
-                'email': user_data['email'],
-                'created_at': user_data['created_at'],
-                'games_played': user_data['games_played'],
-                'total_score': user_data['total_score'],
-                'best_score': user_data['best_score']
-            }
+            'user': u_out,
         })
         
         # Set the cookie
@@ -783,6 +833,71 @@ def get_daily_score_history():
     except Exception as e:
         print(f"Error in daily score history endpoint: {e}")
         return jsonify({'success': False, 'error': 'Internal server error'}), 500
+
+
+@app.route("/api/admin/overview", methods=["GET"])
+@require_admin
+def admin_overview():
+    """Aggregate stats for operator dashboard."""
+    try:
+        users = auth_service._load_users()
+        total_subs = sum(len((u.get("submission_history") or {})) for u in users.values())
+        challenges = challenge_tracker.get_all_challenges()
+        ch_list = sorted(challenges.keys(), reverse=True)[:14]
+        challenge_preview = [
+            {
+                "date": d,
+                "theme": (challenges.get(d) or {}).get("theme"),
+                "emotion": (challenges.get(d) or {}).get("emotion"),
+                "submissions_count": (challenges.get(d) or {}).get("submissions_count", 0),
+                "avg_score": (challenges.get(d) or {}).get("avg_score", 0),
+                "best_score": (challenges.get(d) or {}).get("best_score", 0),
+            }
+            for d in ch_list
+        ]
+        return jsonify(
+            {
+                "success": True,
+                "overview": {
+                    "user_count": len(users),
+                    "active_sessions": auth_service.count_active_sessions(),
+                    "total_daily_submissions_recorded": total_subs,
+                    "tracked_challenge_days": len(challenges),
+                    "data_dir": DATA_DIR,
+                },
+                "recent_tracked_challenges": challenge_preview,
+            }
+        )
+    except Exception as e:
+        print(f"Error in admin overview: {e}")
+        return jsonify({"success": False, "error": "Internal server error"}), 500
+
+
+@app.route("/api/admin/users", methods=["GET"])
+@require_admin
+def admin_users():
+    try:
+        return jsonify({"success": True, "users": auth_service.get_admin_user_summaries()})
+    except Exception as e:
+        print(f"Error in admin users: {e}")
+        return jsonify({"success": False, "error": "Internal server error"}), 500
+
+
+@app.route("/api/admin/submissions", methods=["GET"])
+@require_admin
+def admin_submissions():
+    try:
+        lim = request.args.get("limit", default="80", type=int)
+        return jsonify(
+            {
+                "success": True,
+                "submissions": auth_service.get_admin_recent_submissions(lim or 80),
+            }
+        )
+    except Exception as e:
+        print(f"Error in admin submissions: {e}")
+        return jsonify({"success": False, "error": "Internal server error"}), 500
+
 
 @app.route('/api/archive/challenges', methods=['GET'])
 def get_challenge_archive():

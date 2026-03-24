@@ -9,7 +9,7 @@ import secrets
 import json
 import os
 from datetime import datetime, timedelta
-from typing import Optional, Dict, Any
+from typing import Optional, Dict, Any, List
 
 class AuthService:
     def __init__(self, data_dir: str = "data"):
@@ -476,3 +476,71 @@ class AuthService:
             'submissions': sorted_submissions,
             'total_submissions': len(submission_history)
         }
+
+    def count_active_sessions(self) -> int:
+        """Non-expired sessions (excludes pending Google username setup)."""
+        sessions = self._load_sessions()
+        now = datetime.now()
+        n = 0
+        for data in sessions.values():
+            if data.get("google_user"):
+                continue
+            try:
+                if datetime.fromisoformat(data["expires_at"]) > now:
+                    n += 1
+            except (KeyError, ValueError, TypeError):
+                continue
+        return n
+
+    def get_admin_user_summaries(self) -> List[Dict[str, Any]]:
+        """All users without password_hash (admin dashboard)."""
+        users = self._load_users()
+        rows: List[Dict[str, Any]] = []
+        for username, u in users.items():
+            rows.append(
+                {
+                    "username": username,
+                    "email": u.get("email"),
+                    "created_at": u.get("created_at"),
+                    "last_login": u.get("last_login"),
+                    "games_played": u.get("games_played", 0),
+                    "total_score": u.get("total_score", 0),
+                    "best_score": u.get("best_score", 0),
+                    "daily_submit_days": len(u.get("daily_scores") or {}),
+                    "detailed_submissions": len(u.get("submission_history") or {}),
+                    "last_daily_submission": u.get("last_daily_submission"),
+                }
+            )
+        rows.sort(key=lambda r: r.get("created_at") or "", reverse=True)
+        return rows
+
+    def get_admin_recent_submissions(self, limit: int = 100) -> List[Dict[str, Any]]:
+        """Latest daily submissions across all users (poem truncated)."""
+        users = self._load_users()
+        rows: List[Dict[str, Any]] = []
+        for username, u in users.items():
+            hist = u.get("submission_history") or {}
+            if not isinstance(hist, dict):
+                continue
+            for date_str, sub in hist.items():
+                if not isinstance(sub, dict):
+                    continue
+                poem = sub.get("poem_text") or ""
+                rows.append(
+                    {
+                        "username": username,
+                        "date": date_str,
+                        "score": sub.get("score"),
+                        "theme": sub.get("theme"),
+                        "emotion": sub.get("emotion"),
+                        "mode": sub.get("mode"),
+                        "word_bank_used": sub.get("word_bank_used"),
+                        "submitted_at": sub.get("submitted_at"),
+                        "poem_preview": poem[:280] + ("…" if len(poem) > 280 else ""),
+                    }
+                )
+        rows.sort(
+            key=lambda r: (r.get("submitted_at") or r.get("date") or ""),
+            reverse=True,
+        )
+        return rows[: max(1, min(limit, 500))]

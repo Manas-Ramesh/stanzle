@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router";
-import { User, LogOut } from "lucide-react";
+import { LayoutDashboard, User, LogOut } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -122,6 +122,15 @@ export function Header() {
                 </div>
 
                 <div className="space-y-2">
+                  {user.is_admin ? (
+                    <DropdownMenuItem
+                      className="cursor-pointer"
+                      onSelect={() => navigate("/admin")}
+                    >
+                      <LayoutDashboard className="w-4 h-4" />
+                      Admin
+                    </DropdownMenuItem>
+                  ) : null}
                   <DropdownMenuItem
                     className="cursor-pointer"
                     onSelect={() => {

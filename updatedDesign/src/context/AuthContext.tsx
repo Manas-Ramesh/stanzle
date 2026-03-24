@@ -21,6 +21,8 @@ export type AuthUser = {
   games_played?: number;
   total_score?: number;
   best_score?: number;
+  /** Set by server when username is listed in ADMIN_USERNAMES */
+  is_admin?: boolean;
 };
 
 type AuthContextValue = {
