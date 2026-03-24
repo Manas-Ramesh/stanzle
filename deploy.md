@@ -16,6 +16,21 @@
    ```
 4. **Deploy!** Railway will automatically build and deploy your app.
 
+### Custom domain (always show `stanzle.com`, not `*.railway.app`)
+
+1. In **Railway** → your service → **Settings** → **Networking**, add **`stanzle.com`** (and **`www.stanzle.com`** if you use it). Point DNS at the targets Railway shows (CNAME / A records).
+2. In **Google Cloud Console** → OAuth client → **Authorized redirect URIs**, add exactly:
+   - `https://stanzle.com/login/google/authorized`
+   - (and `https://www.stanzle.com/login/google/authorized` if you use `www`)
+3. Set Railway **environment variables** (pick one approach for the callback URL):
+   - **Recommended:** `GOOGLE_REDIRECT_URI=https://stanzle.com/login/google/authorized`  
+   - **Or:** `PUBLIC_APP_URL=https://stanzle.com` (no trailing slash) — the app builds the same callback path automatically.
+4. Set **`CORS_ORIGINS`** to include your real origins, e.g. `https://stanzle.com,https://www.stanzle.com` (comma-separated, no spaces if possible).
+5. If you use **`FRONTEND_URL`** for OAuth redirects, set it to **`https://stanzle.com`** (same as the site users open).
+6. **Frontend build:** Do **not** bake the Railway URL into the SPA. Leave **`VITE_API_BASE` unset** for same-host deploys so “Continue with Google” stays on `stanzle.com`. If you must set it, use **`https://stanzle.com`**, not `*.railway.app`.
+
+The app enables **ProxyFix** so `Host` / `X-Forwarded-*` from Railway match your custom domain when building OAuth URLs.
+
 **Sessions and data:** Login uses `data/sessions.json` and `data/users.json` on disk. On a default Railway service the filesystem is **ephemeral**—each **redeploy** can wipe those files, so old browser tokens stop matching the server and `/api/auth/verify` returns **401** until the user signs in again. To keep accounts across deploys, attach a **persistent volume** and mount it at your app’s `data/` directory (or move sessions to Redis/Postgres later).
 
 **Cost:** Free tier available, then $5/month

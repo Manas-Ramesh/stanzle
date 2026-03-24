@@ -15,6 +15,7 @@ from flask import Flask, request, jsonify, redirect, send_from_directory, abort,
 from flask_cors import CORS
 from dotenv import load_dotenv
 from functools import wraps
+from werkzeug.middleware.proxy_fix import ProxyFix
 
 # Load environment variables
 load_dotenv()
@@ -26,6 +27,32 @@ def _url_origin(url: str) -> str:
         return ""
     scheme = p.scheme or "https"
     return f"{scheme}://{p.netloc}"
+
+
+def _google_oauth_redirect_uri() -> str:
+    """
+    Full redirect_uri for Google OAuth. Must match Google Cloud Console exactly.
+    Prefer env; else derive from the public host (custom domain) when possible.
+    """
+    env_uri = os.getenv("GOOGLE_REDIRECT_URI", "").strip()
+    if env_uri:
+        return env_uri
+    explicit = (os.getenv("PUBLIC_APP_URL") or os.getenv("CANONICAL_URL") or "").strip().rstrip("/")
+    if explicit:
+        if not explicit.startswith("http"):
+            explicit = f"https://{explicit}"
+        return f"{explicit}/login/google/authorized"
+    try:
+        root = str(request.url_root).rstrip("/")
+        if root.startswith("http") and "localhost" not in root:
+            return f"{root}/login/google/authorized"
+    except RuntimeError:
+        pass
+    vercel = os.getenv("VERCEL_URL", "").strip()
+    if vercel:
+        vb = vercel if vercel.startswith("http") else f"https://{vercel}"
+        return f"{vb.rstrip('/')}/login/google/authorized"
+    return "http://localhost:8000/login/google/authorized"
 
 
 def _clear_auth_token_cookie(response):
@@ -64,11 +91,22 @@ app = Flask(__name__,
             template_folder='public',
             static_url_path='')
 
+# Trust X-Forwarded-* from Railway / Render / Vercel so request.url_root reflects the browser host (e.g. stanzle.com).
+app.wsgi_app = ProxyFix(
+    app.wsgi_app,
+    x_for=1,
+    x_proto=1,
+    x_host=1,
+    x_port=1,
+    x_prefix=1,
+)
+
 # Configure CORS for both local development and Vercel deployment
-cors_origins = os.getenv(
-    'CORS_ORIGINS',
-    'http://localhost:3000,http://localhost:5173,http://localhost:8000',
-).split(',')
+_cors_raw = os.getenv(
+    "CORS_ORIGINS",
+    "http://localhost:3000,http://localhost:5173,http://localhost:8000",
+)
+cors_origins = [o.strip() for o in _cors_raw.split(",") if o.strip()]
 CORS(app, origins=cors_origins)
 
 # Initialize services
@@ -257,12 +295,7 @@ def email_login():
 def google_login():
     """Initiate Google OAuth login"""
     client_id = os.getenv('GOOGLE_CLIENT_ID', '').strip()
-    redirect_uri = os.getenv('GOOGLE_REDIRECT_URI', '').strip()
-    if not redirect_uri:
-        base_url = os.getenv('VERCEL_URL', 'http://localhost:8000')
-        if base_url and not str(base_url).startswith('http'):
-            base_url = f'https://{base_url}'
-        redirect_uri = f'{str(base_url).rstrip("/")}/login/google/authorized'
+    redirect_uri = _google_oauth_redirect_uri()
     
     # Create the authorization URL
     auth_url = (
@@ -382,12 +415,7 @@ def google_callback():
         code = request.args.get('code')
         client_id = os.getenv('GOOGLE_CLIENT_ID', '').strip()
         client_secret = os.getenv('GOOGLE_CLIENT_SECRET', '').strip()
-        redirect_uri = os.getenv('GOOGLE_REDIRECT_URI', '').strip()
-        if not redirect_uri:
-            base_url = os.getenv('VERCEL_URL', 'http://localhost:8000')
-            if base_url and not str(base_url).startswith('http'):
-                base_url = f'https://{base_url}'
-            redirect_uri = f'{str(base_url).rstrip("/")}/login/google/authorized'
+        redirect_uri = _google_oauth_redirect_uri()
         
         if not code:
             return redirect('/landing?error=no_code')
