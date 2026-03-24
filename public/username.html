@@ -131,8 +131,8 @@
 </head>
 <body>
     <div class="username-container">
-        <a href="/landing" class="back-link">
-            <i class="fas fa-arrow-left"></i> Back to Login
+        <a href="/" class="back-link">
+            <i class="fas fa-arrow-left"></i> Back to home
         </a>
         
         <h1>Welcome to Stanzle!</h1>
@@ -183,26 +183,41 @@
             }
             
             checkForGoogleAuth() {
-                // Check if user is already authenticated
+                const urlParams = new URLSearchParams(window.location.search);
+                this.googleEmail = urlParams.get('email');
+                this.googleName = urlParams.get('name');
+                this.googleSetupToken = urlParams.get('token');
+                const midGoogleSignup =
+                    Boolean(this.googleEmail && this.googleSetupToken);
+
+                // Only skip this page if logged in — not when finishing Google signup (URL has token)
                 const existingToken = this.getAuthToken();
-                if (existingToken) {
+                if (existingToken && !midGoogleSignup) {
                     console.log('🔍 User already authenticated, redirecting to main page');
                     window.location.href = '/';
                     return;
                 }
-                
-                // Check if we have Google auth data in URL params
-                const urlParams = new URLSearchParams(window.location.search);
-                this.googleEmail = urlParams.get('email');
-                this.googleName = urlParams.get('name');
-                
+
                 if (this.googleEmail) {
-                    console.log('🔍 Google auth data found:', { email: this.googleEmail, name: this.googleName });
-                    // Pre-fill username with email prefix if available
-                    const emailPrefix = this.googleEmail.split('@')[0];
-                    this.usernameInput.value = emailPrefix;
+                    console.log('🔍 Google auth data found:', {
+                        email: this.googleEmail,
+                        name: this.googleName,
+                    });
+                    // Email local part often has "." or "+" — rules allow only [A-Za-z0-9_]
+                    this.usernameInput.value = this.suggestUsernameFromEmail(this.googleEmail);
                     this.validateUsername();
                 }
+            }
+
+            /** Match server rule: ^[a-zA-Z0-9_]+$ */
+            suggestUsernameFromEmail(email) {
+                const raw = (email || '').split('@')[0] || 'player';
+                let s = raw.replace(/[^a-zA-Z0-9_]/g, '_').replace(/_+/g, '_');
+                s = s.replace(/^_+|_+$/g, '');
+                if (s.length < 3) {
+                    s = (s + '_poet').slice(0, 20);
+                }
+                return s.slice(0, 20);
             }
             
             getAuthToken() {
