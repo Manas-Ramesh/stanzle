@@ -18,13 +18,6 @@ interface PoemEditorProps {
   onTextChange?: (text: string) => void;
 }
 
-const FONT_STACKS: Record<string, string> = {
-  Inter: "Inter, ui-sans-serif, system-ui, sans-serif",
-  Arial: "Arial, Helvetica, sans-serif",
-  Georgia: "Georgia, serif",
-  "Times New Roman": "'Times New Roman', Times, serif",
-};
-
 function getPlainText(el: HTMLElement | null) {
   if (!el) return "";
   return (el.innerText || "")
@@ -51,15 +44,8 @@ export function PoemEditor({
   onTextChange,
 }: PoemEditorProps) {
   const poemLabelId = useId();
-  const fontSelectId = useId();
-  const sizeSelectId = useId();
-  const foreColorInputId = useId();
-  const backColorInputId = useId();
   const editorRef = useRef<HTMLDivElement>(null);
   const pendingRangeRef = useRef<Range | null>(null);
-
-  const [foreSwatch, setForeSwatch] = useState("#111827");
-  const [backSwatch, setBackSwatch] = useState("#fef08a");
 
   const [wordCount, setWordCount] = useState(0);
   const [showPlaceholder, setShowPlaceholder] = useState(true);
@@ -142,49 +128,6 @@ export function PoemEditor({
     editorRef.current?.focus();
   };
 
-  /** Apply inline CSS at selection or caret (caret gets a zero-width space so the next keystrokes pick up the style). */
-  const applyInlineStyles = useCallback((styles: Record<string, string>) => {
-    const ed = editorRef.current;
-    if (!ed) return;
-    ed.focus();
-    restorePendingSelection();
-
-    const sel = window.getSelection();
-    if (!sel || sel.rangeCount === 0) return;
-    const range = sel.getRangeAt(0);
-
-    const span = document.createElement("span");
-    Object.entries(styles).forEach(([k, v]) => {
-      span.style.setProperty(k, v);
-    });
-
-    if (range.collapsed) {
-      const zw = document.createTextNode("\u200b");
-      span.appendChild(zw);
-      range.insertNode(span);
-      const nr = document.createRange();
-      nr.setStart(zw, 1);
-      nr.collapse(true);
-      sel.removeAllRanges();
-      sel.addRange(nr);
-      pendingRangeRef.current = nr.cloneRange();
-    } else {
-      try {
-        range.surroundContents(span);
-      } catch {
-        const frag = range.extractContents();
-        span.appendChild(frag);
-        range.insertNode(span);
-      }
-      sel.removeAllRanges();
-      const nr = document.createRange();
-      nr.selectNodeContents(span);
-      nr.collapse(false);
-      sel.addRange(nr);
-      pendingRangeRef.current = nr.cloneRange();
-    }
-  }, [restorePendingSelection]);
-
   const exec = useCallback(
     (command: string, value?: string) => {
       restorePendingSelection();
@@ -217,41 +160,6 @@ export function PoemEditor({
     },
     [restorePendingSelection, syncFromDom],
   );
-
-  const applyFontFamily = (family: string) => {
-    const stack = FONT_STACKS[family] ?? family;
-    restorePendingSelection();
-    applyInlineStyles({ fontFamily: stack });
-    requestAnimationFrame(() => syncFromDom());
-  };
-
-  const applyFontSize = (px: string) => {
-    restorePendingSelection();
-    applyInlineStyles({ fontSize: px, lineHeight: "1.5" });
-    requestAnimationFrame(() => syncFromDom());
-  };
-
-  const applyForeColor = (hex: string) => {
-    setForeSwatch(hex);
-    restorePendingSelection();
-    applyInlineStyles({ color: hex });
-    requestAnimationFrame(() => syncFromDom());
-  };
-
-  const applyBackColor = (hex: string) => {
-    setBackSwatch(hex);
-    restorePendingSelection();
-    applyInlineStyles({ backgroundColor: hex });
-    requestAnimationFrame(() => syncFromDom());
-  };
-
-  const onToolbarMouseDownCapture = (e: React.MouseEvent) => {
-    const t = e.target as HTMLElement;
-    // Color inputs stash selection on their own pointerdown; skipping here avoids running
-    // before the real target is known and keeps native picker activation reliable.
-    if (t.closest?.('input[type="color"]')) return;
-    stashSelection();
-  };
 
   const handleFind = () => {
     const q = window.prompt("Find in your poem:", "");
@@ -327,7 +235,7 @@ export function PoemEditor({
 
         <div
           className="border-2 border-gray-300 rounded-t bg-gray-50 px-3 py-2 flex flex-wrap items-center gap-1"
-          onMouseDownCapture={onToolbarMouseDownCapture}
+          onMouseDownCapture={stashSelection}
         >
           <button
             type="button"
@@ -377,85 +285,6 @@ export function PoemEditor({
           >
             <Strikethrough className="w-4 h-4 text-gray-700" />
           </button>
-
-          <div className="w-px h-6 bg-gray-300 mx-1" />
-
-          <label htmlFor={fontSelectId} className="sr-only">
-            Poem font family
-          </label>
-          <select
-            id={fontSelectId}
-            name="stanzle-poem-font-family"
-            className="px-2 py-1 text-sm border border-gray-300 rounded bg-white text-gray-700 focus:outline-none focus:border-gray-500 max-w-[7rem]"
-            defaultValue="Inter"
-            onChange={(e) => {
-              applyFontFamily(e.target.value);
-            }}
-          >
-            <option value="Inter">Inter</option>
-            <option value="Arial">Arial</option>
-            <option value="Georgia">Georgia</option>
-            <option value="Times New Roman">Times New Roman</option>
-          </select>
-
-          <label htmlFor={sizeSelectId} className="sr-only">
-            Poem font size
-          </label>
-          <select
-            id={sizeSelectId}
-            name="stanzle-poem-font-size"
-            className="px-2 py-1 text-sm border border-gray-300 rounded bg-white text-gray-700 focus:outline-none focus:border-gray-500"
-            defaultValue="16px"
-            onChange={(e) => {
-              applyFontSize(e.target.value);
-            }}
-          >
-            <option value="14px">14px</option>
-            <option value="16px">16px</option>
-            <option value="18px">18px</option>
-            <option value="20px">20px</option>
-          </select>
-
-          <div className="w-px h-6 bg-gray-300 mx-1" />
-
-          <label
-            className="relative inline-flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center rounded transition-colors hover:bg-gray-200"
-            title="Text color"
-          >
-            <input
-              id={foreColorInputId}
-              name="stanzle-poem-text-color"
-              type="color"
-              value={foreSwatch}
-              className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
-              aria-label="Text color"
-              onPointerDown={stashSelection}
-              onChange={(e) => applyForeColor(e.target.value)}
-            />
-            <span
-              className="pointer-events-none h-4 w-4 rounded-sm border border-gray-300"
-              style={{ backgroundColor: foreSwatch }}
-            />
-          </label>
-          <label
-            className="relative inline-flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center rounded transition-colors hover:bg-gray-200"
-            title="Highlight color"
-          >
-            <input
-              id={backColorInputId}
-              name="stanzle-poem-highlight-color"
-              type="color"
-              value={backSwatch}
-              className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
-              aria-label="Highlight color"
-              onPointerDown={stashSelection}
-              onChange={(e) => applyBackColor(e.target.value)}
-            />
-            <span
-              className="pointer-events-none h-4 w-4 rounded-sm border border-gray-300"
-              style={{ backgroundColor: backSwatch }}
-            />
-          </label>
 
           <div className="w-px h-6 bg-gray-300 mx-1" />
 
