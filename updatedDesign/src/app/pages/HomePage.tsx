@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useId, useState } from "react";
 import { useLocation, useNavigate } from "react-router";
 import { toast } from "sonner";
 import { useAuth } from "@/context/AuthContext";
@@ -24,6 +24,9 @@ export function HomePage() {
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
   const [dailyDone, setDailyDone] = useState(false);
+  const authUsernameId = useId();
+  const authEmailId = useId();
+  const authPasswordId = useId();
 
   useEffect(() => {
     const modeParam = new URLSearchParams(location.search).get("mode");
@@ -158,7 +161,12 @@ export function HomePage() {
               </div>
 
               <form onSubmit={(e) => void handleAuth(e)} className="space-y-3">
+                <label htmlFor={authUsernameId} className="sr-only">
+                  Username
+                </label>
                 <input
+                  id={authUsernameId}
+                  name="username"
                   className="w-full border-2 border-gray-300 rounded-lg px-3 py-2"
                   placeholder="Username"
                   value={username}
@@ -167,17 +175,29 @@ export function HomePage() {
                   required
                 />
                 {mode === "register" && (
-                  <input
-                    className="w-full border-2 border-gray-300 rounded-lg px-3 py-2"
-                    placeholder="Email"
-                    type="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    autoComplete="email"
-                    required
-                  />
+                  <>
+                    <label htmlFor={authEmailId} className="sr-only">
+                      Email
+                    </label>
+                    <input
+                      id={authEmailId}
+                      name="email"
+                      className="w-full border-2 border-gray-300 rounded-lg px-3 py-2"
+                      placeholder="Email"
+                      type="email"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      autoComplete="email"
+                      required
+                    />
+                  </>
                 )}
+                <label htmlFor={authPasswordId} className="sr-only">
+                  Password
+                </label>
                 <input
+                  id={authPasswordId}
+                  name="password"
                   className="w-full border-2 border-gray-300 rounded-lg px-3 py-2"
                   placeholder="Password"
                   type="password"

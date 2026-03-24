@@ -51,6 +51,10 @@ export function PoemEditor({
   onTextChange,
 }: PoemEditorProps) {
   const poemLabelId = useId();
+  const fontSelectId = useId();
+  const sizeSelectId = useId();
+  const foreColorInputId = useId();
+  const backColorInputId = useId();
   const editorRef = useRef<HTMLDivElement>(null);
   const foreInputRef = useRef<HTMLInputElement>(null);
   const backInputRef = useRef<HTMLInputElement>(null);
@@ -365,7 +369,12 @@ export function PoemEditor({
 
           <div className="w-px h-6 bg-gray-300 mx-1" />
 
+          <label htmlFor={fontSelectId} className="sr-only">
+            Poem font family
+          </label>
           <select
+            id={fontSelectId}
+            name="stanzle-poem-font-family"
             className="px-2 py-1 text-sm border border-gray-300 rounded bg-white text-gray-700 focus:outline-none focus:border-gray-500 max-w-[7rem]"
             defaultValue="Inter"
             onMouseDown={() => stashSelection()}
@@ -379,7 +388,12 @@ export function PoemEditor({
             <option value="Times New Roman">Times New Roman</option>
           </select>
 
+          <label htmlFor={sizeSelectId} className="sr-only">
+            Poem font size
+          </label>
           <select
+            id={sizeSelectId}
+            name="stanzle-poem-font-size"
             className="px-2 py-1 text-sm border border-gray-300 rounded bg-white text-gray-700 focus:outline-none focus:border-gray-500"
             defaultValue="16px"
             onMouseDown={() => stashSelection()}
@@ -474,6 +488,8 @@ export function PoemEditor({
 
         <input
           ref={foreInputRef}
+          id={foreColorInputId}
+          name="stanzle-poem-text-color"
           type="color"
           className="absolute -left-[9999px] w-8 h-8 opacity-0"
           defaultValue="#111827"
@@ -482,6 +498,8 @@ export function PoemEditor({
         />
         <input
           ref={backInputRef}
+          id={backColorInputId}
+          name="stanzle-poem-highlight-color"
           type="color"
           className="absolute -left-[9999px] w-8 h-8 opacity-0"
           defaultValue="#fef08a"

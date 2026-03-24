@@ -1,6 +1,3 @@
-import { Label } from "./ui/label";
-import { Switch } from "./ui/switch";
-
 interface GameSettingsProps {
   difficulty: "easy" | "hard";
   wordBankEnabled: boolean;
