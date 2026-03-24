@@ -253,6 +253,9 @@ class AuthService:
             return None
         
         session_data = sessions[token]
+        # Pending Google username setup — not a full login session for /api/auth/verify
+        if session_data.get("google_user"):
+            return None
         expires_at = datetime.fromisoformat(session_data['expires_at'])
         
         if datetime.now() > expires_at:
@@ -263,7 +266,9 @@ class AuthService:
         
         # Get user data
         users = self._load_users()
-        username = session_data['username']
+        username = session_data.get('username')
+        if not username:
+            return None
         
         if username not in users:
             # User no longer exists, remove session

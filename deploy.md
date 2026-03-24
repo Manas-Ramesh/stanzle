@@ -16,6 +16,8 @@
    ```
 4. **Deploy!** Railway will automatically build and deploy your app.
 
+**Sessions and data:** Login uses `data/sessions.json` and `data/users.json` on disk. On a default Railway service the filesystem is **ephemeral**—each **redeploy** can wipe those files, so old browser tokens stop matching the server and `/api/auth/verify` returns **401** until the user signs in again. To keep accounts across deploys, attach a **persistent volume** and mount it at your app’s `data/` directory (or move sessions to Redis/Postgres later).
+
 **Cost:** Free tier available, then $5/month
 
 ### Option 2: Render

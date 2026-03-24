@@ -11,7 +11,7 @@ import secrets
 import requests
 from urllib.parse import urlencode, urlparse
 from datetime import datetime, timedelta
-from flask import Flask, request, jsonify, redirect, send_from_directory, abort
+from flask import Flask, request, jsonify, redirect, send_from_directory, abort, make_response
 from flask_cors import CORS
 from dotenv import load_dotenv
 from functools import wraps
@@ -26,6 +26,26 @@ def _url_origin(url: str) -> str:
         return ""
     scheme = p.scheme or "https"
     return f"{scheme}://{p.netloc}"
+
+
+def _clear_auth_token_cookie(response):
+    """Remove stale authToken (e.g. after redeploy wiped server sessions)."""
+    forwarded_https = request.headers.get("X-Forwarded-Proto", "") == "https"
+    secure = (
+        bool(os.getenv("VERCEL"))
+        or os.getenv("GOOGLE_REDIRECT_URI", "").strip().startswith("https://")
+        or bool(os.getenv("RAILWAY_ENVIRONMENT"))
+        or request.is_secure
+        or forwarded_https
+    )
+    response.set_cookie(
+        "authToken",
+        "",
+        max_age=0,
+        path="/",
+        secure=secure,
+        httponly=False,
+    )
 
 
 # Add current directory to Python path
@@ -382,17 +402,17 @@ def google_callback():
             'redirect_uri': redirect_uri
         }
         
-        print(f"🔍 Google OAuth: Token exchange request - URL: {token_url}")
-        print(f"🔍 Google OAuth: Token data: {token_data}")
+        print(f"🔍 Google OAuth: Exchanging code at {token_url}")
         
         token_response = requests.post(token_url, data=token_data)
         print(f"🔍 Google OAuth: Token response status: {token_response.status_code}")
-        print(f"🔍 Google OAuth: Token response: {token_response.text}")
         
         token_json = token_response.json()
         
         if 'access_token' not in token_json:
-            print(f"🔍 Google OAuth: No access token in response: {token_json}")
+            print(
+                f"🔍 Google OAuth: No access token (error={token_json.get('error', 'unknown')})"
+            )
             return redirect('/landing?error=token_failed')
         
         access_token = token_json['access_token']
@@ -470,14 +490,13 @@ def google_callback():
             # New user - redirect to username selection page
             print(f"🔍 Google OAuth: New user detected, redirecting to username selection")
             
-            # Check if user is already authenticated (they might have completed setup)
-            existing_token = request.cookies.get('authToken')
-            if existing_token:
+            existing_cookie = request.cookies.get("authToken")
+            if existing_cookie:
                 print(f"🔍 Google OAuth: User already has auth token, checking if valid")
-                user = auth_service.verify_token(existing_token)
+                user = auth_service.verify_token(existing_cookie)
                 if user:
                     print(f"🔍 Google OAuth: User already authenticated, redirecting to main page")
-                    return redirect('/')
+                    return redirect("/")
             
             # Store Google user info in session for username setup
             temp_session_token = secrets.token_urlsafe(32)
@@ -495,7 +514,12 @@ def google_callback():
             
             # Redirect to username selection page with Google user info
             redirect_url = f'/username?email={email}&name={user_info.get("name", "")}&token={temp_session_token}'
-            return redirect(redirect_url)
+            response = make_response(redirect(redirect_url))
+            # Old cookie from a previous deploy/session is not in sessions.json → clear it so
+            # the SPA stops pairing a dead token with /api/auth/verify (401).
+            if existing_cookie:
+                _clear_auth_token_cookie(response)
+            return response
         
     except Exception as e:
         print(f"Google OAuth error: {e}")
