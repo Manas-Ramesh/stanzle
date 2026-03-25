@@ -38,7 +38,7 @@ export function HowToPlayDialog({ open, onOpenChange }: HowToPlayDialogProps) {
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent className="max-h-[min(85vh,640px)] overflow-y-auto sm:max-w-lg gap-0 p-0">
+      <DialogContent className="max-h-[min(85vh,640px)] overflow-y-auto sm:max-w-lg gap-0 border-gray-900 bg-white p-0 shadow-xl">
         <div className="px-6 pt-6 pb-4 pr-14">
           <DialogHeader className="text-left gap-1">
             <DialogTitle className="text-xl font-bold text-gray-900">How to play</DialogTitle>
@@ -91,7 +91,7 @@ export function HowToPlayDialog({ open, onOpenChange }: HowToPlayDialogProps) {
           </div>
         </div>
 
-        <DialogFooter className="border-t border-gray-200 bg-gray-50/80 px-6 py-4 sm:justify-center">
+        <DialogFooter className="border-t border-gray-200 bg-gray-50 px-6 py-4 sm:justify-center">
           <button
             type="button"
             onClick={() => handleOpenChange(false)}
