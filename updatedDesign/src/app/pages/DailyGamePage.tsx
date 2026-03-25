@@ -1,6 +1,11 @@
 import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router";
 import { UnlimitedPrefetchLink } from "../components/UnlimitedPrefetchLink";
+import {
+  HowToPlayDialog,
+  HowToPlayTriggerButton,
+  readHowToPlayDismissed,
+} from "../components/HowToPlayDialog";
 import { toast } from "sonner";
 import { GameSettings } from "../components/GameSettings";
 import { ThemeEmotionSelector } from "../components/ThemeEmotionSelector";
@@ -92,6 +97,7 @@ export function DailyGamePage() {
   const [guess, setGuess] = useState<AiGuess | null>(null);
   const [scores, setScores] = useState<ScoreResult | null>(null);
   const [guestPromptOpen, setGuestPromptOpen] = useState(false);
+  const [howToPlayOpen, setHowToPlayOpen] = useState(false);
 
   const [todayStatus, setTodayStatus] = useState<{
     loading: boolean;
@@ -172,6 +178,19 @@ export function DailyGamePage() {
       cancelled = true;
     };
   }, [user]);
+
+  const showMainPlayForm =
+    !challengeLoading &&
+    challenge != null &&
+    !(user && getAuthToken() && todayStatus.loading && !hasSubmitted) &&
+    !hasSubmitted &&
+    !(user && getAuthToken() && todayStatus.submitted);
+
+  useEffect(() => {
+    if (!showMainPlayForm) return;
+    if (readHowToPlayDismissed()) return;
+    setHowToPlayOpen(true);
+  }, [showMainPlayForm]);
 
   const requiredWords = wordBankEnabled && challenge ? challenge.words : [];
 
@@ -409,8 +428,12 @@ export function DailyGamePage() {
 
   return (
     <div className="min-h-[calc(100vh-3.5rem)] bg-white">
+      <HowToPlayDialog open={howToPlayOpen} onOpenChange={setHowToPlayOpen} />
       <div className="max-w-3xl mx-auto py-8 px-4">
         <div className="space-y-6">
+          <div className="flex justify-end -mt-1">
+            <HowToPlayTriggerButton onClick={() => setHowToPlayOpen(true)} />
+          </div>
           {!user && (
             <p className="text-sm text-center text-amber-800 bg-amber-50 border border-amber-200 rounded px-3 py-2">
               Guest mode: you can play daily and see your score, but it won’t be saved.
