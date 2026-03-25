@@ -10,7 +10,7 @@ import sys
 import secrets
 import requests
 from urllib.parse import urlencode, urlparse
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from flask import Flask, request, jsonify, redirect, send_from_directory, make_response
 from flask_cors import CORS
 from dotenv import load_dotenv
@@ -108,7 +108,48 @@ _cors_raw = os.getenv(
     "http://localhost:3000,http://localhost:5173,http://localhost:8000",
 )
 cors_origins = [o.strip() for o in _cors_raw.split(",") if o.strip()]
-CORS(app, origins=cors_origins)
+CORS(
+    app,
+    origins=cors_origins,
+    allow_headers=["Content-Type", "Authorization", "X-Stanzle-Calendar-Date"],
+)
+
+_CAL_DATE_RE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
+
+
+def _utc_calendar_date_str() -> str:
+    return datetime.now(timezone.utc).strftime("%Y-%m-%d")
+
+
+def _calendar_date_sane(iso_day: str) -> bool:
+    """Reject tampered clocks: within ±2 days of UTC (covers all real timezones)."""
+    if not _CAL_DATE_RE.match(iso_day):
+        return False
+    try:
+        parsed = datetime.strptime(iso_day, "%Y-%m-%d").replace(tzinfo=timezone.utc).date()
+        server = datetime.now(timezone.utc).date()
+        return abs((parsed - server).days) <= 2
+    except ValueError:
+        return False
+
+
+def _calendar_date_from_request() -> str:
+    """
+    Prefer browser local calendar day from X-Stanzle-Calendar-Date (YYYY-MM-DD).
+    Falls back to UTC date when missing or out of range.
+    """
+    raw = (request.headers.get("X-Stanzle-Calendar-Date") or "").strip()
+    if _calendar_date_sane(raw):
+        return raw
+    return _utc_calendar_date_str()
+
+
+def _leaderboard_calendar_date() -> str:
+    """Optional ?date=YYYY-MM-DD (e.g. shareable); else same as _calendar_date_from_request()."""
+    q = (request.args.get("date") or "").strip()
+    if _calendar_date_sane(q):
+        return q
+    return _calendar_date_from_request()
 
 # Initialize services
 DATA_DIR = os.getenv("DATA_DIR", "data")
@@ -617,8 +658,8 @@ def get_daily_challenge():
                 'challenge': challenge
             })
 
-        today = datetime.now().strftime('%Y-%m-%d')
-        existing = challenge_tracker.get_challenge_by_date(today) or {}
+        day = _calendar_date_from_request()
+        existing = challenge_tracker.get_challenge_by_date(day) or {}
         if existing.get('theme') and existing.get('emotion') and existing.get('words'):
             challenge = {
                 'theme': existing.get('theme'),
@@ -627,9 +668,9 @@ def get_daily_challenge():
             }
         else:
             # Deterministic-by-date fallback keeps daily prompt stable even without persistent storage.
-            challenge = wordnik_service.generate_daily_challenge(today)
+            challenge = wordnik_service.generate_daily_challenge(day)
             # Save once per date when storage is available.
-            challenge_tracker.track_challenge(challenge)
+            challenge_tracker.track_challenge(challenge, target_date=day)
         
         return jsonify({
             'success': True,
@@ -721,7 +762,8 @@ def get_daily_submission_status():
             return jsonify({'success': False, 'error': 'Invalid token'}), 401
         
         username = user_data['username']
-        status = auth_service.get_daily_submission_status(username)
+        cd = _calendar_date_from_request()
+        status = auth_service.get_daily_submission_status(username, cd)
         
         return jsonify(status)
     
@@ -732,9 +774,10 @@ def get_daily_submission_status():
 
 @app.route("/api/daily/leaderboard", methods=["GET"])
 def daily_leaderboard():
-    """Public: today's daily challenge — users tied for the highest score (all shown)."""
+    """Public: top scores for the request calendar day (browser local date via header or ?date=)."""
     try:
-        return jsonify(auth_service.get_daily_leaderboard_for_date())
+        day = _leaderboard_calendar_date()
+        return jsonify(auth_service.get_daily_leaderboard_for_date(day))
     except Exception as e:
         print(f"Error in daily leaderboard: {e}")
         return jsonify({"success": False, "error": "Internal server error"}), 500
@@ -779,13 +822,15 @@ def submit_daily_score():
             'ai_guess': data.get('ai_guess', {})
         }
         
-        result = auth_service.submit_daily_score(username, int(score), submission_data)
+        cd = _calendar_date_from_request()
+        result = auth_service.submit_daily_score(
+            username, int(score), submission_data, calendar_date=cd
+        )
         
         # Update challenge statistics
         if result.get('success'):
-            today = datetime.now().strftime('%Y-%m-%d')
             # Get current stats and update them
-            current_challenge = challenge_tracker.get_challenge_by_date(today)
+            current_challenge = challenge_tracker.get_challenge_by_date(cd)
             if current_challenge:
                 new_submissions = current_challenge.get('submissions_count', 0) + 1
                 current_avg = current_challenge.get('avg_score', 0.0)
@@ -793,7 +838,7 @@ def submit_daily_score():
                 best_score = max(current_challenge.get('best_score', 0), int(score))
                 
                 challenge_tracker.update_challenge_stats(
-                    today, 
+                    cd, 
                     submissions_count=new_submissions,
                     avg_score=new_avg,
                     best_score=best_score
@@ -963,8 +1008,8 @@ def track_challenge():
         data = request.get_json()
         print(f"DEBUG: Received challenge data: {data}")
         
-        # Track the challenge
-        success = challenge_tracker.track_challenge(data)
+        cd = _calendar_date_from_request()
+        success = challenge_tracker.track_challenge(data, target_date=cd)
         
         if success:
             print("DEBUG: Challenge tracked successfully")

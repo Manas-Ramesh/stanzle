@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router";
 import { useAuth } from "@/context/AuthContext";
 import { apiFetch } from "@/lib/api";
+import { getLocalCalendarDateString } from "@/lib/calendarDate";
 
 type LeaderboardResponse = {
   success: boolean;
@@ -22,7 +23,10 @@ export function LeaderboardPage() {
     let cancelled = false;
     setLoading(true);
     setError(null);
-    apiFetch<LeaderboardResponse>("/api/daily/leaderboard", { method: "GET" })
+    apiFetch<LeaderboardResponse>(
+      `/api/daily/leaderboard?date=${encodeURIComponent(getLocalCalendarDateString())}`,
+      { method: "GET" },
+    )
       .then((res) => {
         if (!cancelled) setData(res);
       })
@@ -43,8 +47,8 @@ export function LeaderboardPage() {
         <div className="mb-2 text-center sm:text-left">
           <h1 className="text-2xl font-bold text-gray-900">Daily leaderboard</h1>
           <p className="text-sm text-gray-600 mt-2">
-            Highest score for today&apos;s official daily challenge. Ties share the top spot — everyone
-            at that score is listed.
+            Highest score for today&apos;s official daily challenge (your device&apos;s calendar date).
+            Ties share the top spot — everyone at that score is listed.
           </p>
         </div>
 

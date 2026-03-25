@@ -7,7 +7,7 @@ import json
 import csv
 import os
 from datetime import datetime, date
-from typing import Dict, List, Any
+from typing import Dict, List, Any, Optional
 
 class ChallengeTracker:
     def __init__(self, data_dir: str = "data"):
@@ -47,11 +47,10 @@ class ChallengeTracker:
                 ])
     
     def track_challenge(self, challenge_data: Dict[str, Any], submissions_count: int = 0, 
-                       avg_score: float = 0.0, best_score: int = 0) -> bool:
-        """Track a daily challenge"""
+                       avg_score: float = 0.0, best_score: int = 0, target_date: Optional[str] = None) -> bool:
+        """Track a daily challenge for target_date (YYYY-MM-DD) or server local today if omitted."""
         try:
-            # Get current date
-            today = date.today().isoformat()
+            today = (target_date or date.today().isoformat()).strip()
             
             # Load existing challenges
             challenges = self._load_challenges()

@@ -319,45 +319,51 @@ class AuthService:
         self._save_users(users)
         return True
     
-    def get_daily_submission_status(self, username: str) -> Dict[str, Any]:
-        """Check if user has already submitted today's daily challenge"""
+    def get_daily_submission_status(self, username: str, calendar_date: str) -> Dict[str, Any]:
+        """Check if user has already submitted for this calendar day (client local YYYY-MM-DD)."""
         users = self._load_users()
         
         if username not in users:
             return {'can_submit': False, 'message': 'User not found'}
         
         user_data = users[username]
-        today = datetime.now().strftime('%Y-%m-%d')
+        day = calendar_date.strip()
         
-        # Check if user has already submitted today
-        if user_data.get('last_daily_submission') == today:
+        ds = (user_data.get('daily_scores') or {}).get(day)
+        if isinstance(ds, dict) and ds.get('submitted'):
             history = user_data.get('submission_history', {}) or {}
-            submission = history.get(today)
+            submission = history.get(day)
             return {
                 'can_submit': False,
                 'message': 'You have already submitted today\'s daily challenge',
-                'daily_score': user_data.get('daily_scores', {}).get(today, {}).get('score', 0),
+                'daily_score': ds.get('score', 0),
                 'submission': submission if isinstance(submission, dict) else None,
             }
         
         return {'can_submit': True, 'message': 'Ready to submit'}
     
-    def submit_daily_score(self, username: str, score: int, submission_data: Dict[str, Any] = None) -> Dict[str, Any]:
-        """Submit daily score and update user stats with detailed submission data"""
+    def submit_daily_score(
+        self,
+        username: str,
+        score: int,
+        submission_data: Dict[str, Any] = None,
+        calendar_date: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        """Submit daily score for calendar_date (YYYY-MM-DD); defaults to UTC day if omitted."""
         users = self._load_users()
         
         if username not in users:
             return {'success': False, 'message': 'User not found'}
         
         user_data = users[username]
-        today = datetime.now().strftime('%Y-%m-%d')
+        today = (calendar_date or datetime.utcnow().strftime('%Y-%m-%d')).strip()
         
-        # Check if user has already submitted today
-        if user_data.get('last_daily_submission') == today:
+        ds_existing = (user_data.get('daily_scores') or {}).get(today)
+        if isinstance(ds_existing, dict) and ds_existing.get('submitted'):
             return {
                 'success': False, 
                 'message': 'You have already submitted today\'s daily challenge',
-                'daily_score': user_data.get('daily_scores', {}).get(today, {}).get('score', 0)
+                'daily_score': ds_existing.get('score', 0)
             }
         
         # Initialize data structures if they don't exist
