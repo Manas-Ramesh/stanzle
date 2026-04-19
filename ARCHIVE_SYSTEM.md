@@ -1,10 +1,11 @@
-# Stanzle Challenge Archive System
+# Challenge archive
 
-This system tracks all daily challenges for future archive mode functionality.
+Tracks each daily challenge for stats and a possible future archive UI.
 
-## 📁 Data Storage
+## Storage
 
-### JSON Format (`data/daily_challenges.json`)
+**JSON** (`data/daily_challenges.json`)
+
 ```json
 {
   "2025-01-19": {
@@ -20,89 +21,65 @@ This system tracks all daily challenges for future archive mode functionality.
 }
 ```
 
-### CSV Format (`data/daily_challenges.csv`)
+**CSV** (`data/daily_challenges.csv`)
+
 ```csv
 date,theme,emotion,word1,word2,word3,word4,submissions_count,avg_score,best_score,created_at
 2025-01-19,Adventure,Joy,mountain,journey,discover,freedom,15,67.3,95,2025-01-19T10:30:00
 ```
 
-## 🔧 API Endpoints
+## API
 
-### Get All Challenges
-```
-GET /api/archive/challenges
-```
-Returns all tracked challenges.
+| Method | Path | Description |
+|--------|------|-------------|
+| GET | `/api/archive/challenges` | All tracked challenges |
+| GET | `/api/archive/challenge/YYYY-MM-DD` | One day |
+| GET | `/api/archive/export` | CSV export (timestamped file) |
 
-### Get Challenge by Date
-```
-GET /api/archive/challenge/2025-01-19
-```
-Returns a specific challenge by date (YYYY-MM-DD format).
+## Fields per day
 
-### Export Challenges
-```
-GET /api/archive/export
-```
-Exports all challenges to a timestamped CSV file.
+- Date, theme, emotion, word list
+- `submissions_count`, `avg_score`, `best_score`
+- `created_at`
 
-## 📊 Tracked Data
+## Scripts
 
-For each daily challenge, the system tracks:
-
-- **Basic Info**: Date, theme, emotion, required words
-- **Statistics**: 
-  - `submissions_count`: Number of users who submitted
-  - `avg_score`: Average score across all submissions
-  - `best_score`: Highest score achieved
-- **Metadata**: Creation timestamp
-
-## 🚀 Usage
-
-### View Challenges
 ```bash
 python scripts/view_challenges.py
 ```
 
-### Access via API
-```javascript
-// Get all challenges
-fetch('/api/archive/challenges')
-  .then(response => response.json())
-  .then(data => console.log(data.challenges));
+**Example fetch**
 
-// Get specific challenge
-fetch('/api/archive/challenge/2025-01-19')
-  .then(response => response.json())
-  .then(data => console.log(data.challenge));
+```javascript
+fetch("/api/archive/challenges")
+  .then((r) => r.json())
+  .then((data) => console.log(data.challenges));
+
+fetch("/api/archive/challenge/2025-01-19")
+  .then((r) => r.json())
+  .then((data) => console.log(data.challenge));
 ```
 
-## 🔮 Future Archive Mode
+## Future archive mode
 
-This data will be used to implement an archive mode where users can:
+Possible uses:
 
-1. **Browse Past Challenges**: View all previous daily challenges
-2. **Replay Challenges**: Try challenges from specific dates
-3. **Challenge History**: See statistics and popular challenges
-4. **Leaderboards**: Compare scores across different days
+- Browse past dailies
+- Replay a date
+- History and stats
+- Compare days on a leaderboard
 
-## 📈 Statistics Tracking
+## Stats updates
 
-The system automatically updates statistics when users submit daily scores:
+On daily submit, the backend can update counts, average score, and best score for that date.
 
-- **Submission Count**: Increments with each submission
-- **Average Score**: Calculated across all submissions
-- **Best Score**: Tracks the highest score achieved
-
-## 🗂️ File Structure
+## Files
 
 ```
 data/
-├── daily_challenges.json    # Main JSON storage
-├── daily_challenges.csv     # CSV backup/export
-└── challenges_export_*.csv  # Timestamped exports
+├── daily_challenges.json
+├── daily_challenges.csv
+└── challenges_export_*.csv
 ```
 
-## 🔧 Configuration
-
-The archive system is automatically enabled and requires no configuration. Data is stored in the `data/` directory and persists across server restarts.
+No extra config: writes under `data/` and survives restarts if the disk is persistent.

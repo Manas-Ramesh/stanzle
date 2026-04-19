@@ -1,187 +1,155 @@
-# Stanzle 🎭
+# Stanzle
 
-A creative poetry game where players write poems based on given themes and emotions, with AI-powered scoring and analysis.
+Poetry game: write from a daily theme and emotion, get AI scoring and feedback.
 
-## 🌟 Features
+## Features
 
-### Core Gameplay
-- **Daily Challenges**: New theme and emotion combinations every day
-- **Difficulty Modes**: 
-  - **Hard Mode**: Use both theme and emotion
-  - **Easy Mode**: Choose to focus on either theme or emotion
-- **Word Bank**: Optional feature with 4 random words that must be included
-- **Rich Text Editor**: Google Docs-style editing with formatting tools
+**Gameplay**
 
-### AI Integration
-- **OpenAI Analysis**: AI guesses the theme and emotion from your poem
-- **Intelligent Scoring**: Scores based on accuracy, creativity, and adherence to requirements
-- **Detailed Feedback**: Get insights on how to improve your poetry
+- Daily challenge: same theme and emotion for everyone that day
+- Hard: scored on both theme and emotion
+- Easy: pick theme or emotion as the main focus
+- Optional word bank: four words that must appear in the poem
+- Rich text editor for the poem
 
-### User Experience
-- **User Authentication**: Secure login with username/password and Google OAuth
-- **Profile System**: Track your poetry journey with detailed submission history
-- **Unlimited Mode**: Practice with unlimited challenges
-- **Daily Limits**: One submission per day for daily challenges
-- **Archive System**: Track all challenges for future reference
+**AI**
 
-## 🚀 Quick Start
+- Guesses theme and emotion from the poem
+- Scores match, creativity, and requirements
+- Short written feedback
 
-### Prerequisites
+**Accounts and modes**
+
+- Username/password and optional Google sign-in
+- Profile with submission history
+- Unlimited mode for practice
+- One official daily submit per day when logged in
+- Archive tracking for past dailies
+
+## Quick start
+
+**Requirements**
+
 - Python 3.8+
 - OpenAI API key
-- Wordnik API key (optional)
+- Wordnik API key (optional, word bank)
 - Google OAuth credentials (optional)
 
-### Installation
+**Setup**
 
-1. **Clone the repository**
-   ```bash
-   git clone https://github.com/yourusername/stanzle.git
-   cd stanzle
-   ```
+```bash
+git clone https://github.com/yourusername/stanzle.git
+cd stanzle
+pip install -r requirements.txt
+cp env.example .env
+```
 
-2. **Install dependencies**
-   ```bash
-   pip install -r requirements.txt
-   ```
+Edit `.env`:
 
-3. **Set up environment variables**
-   ```bash
-   cp env.example .env
-   ```
-   
-   Edit `.env` with your API keys:
-   ```
-   OPENAI_API_KEY=your_openai_key_here
-   WORDNIK_API_KEY=your_wordnik_key_here
-   GOOGLE_CLIENT_ID=your_google_client_id
-   GOOGLE_CLIENT_SECRET=your_google_client_secret
-   SECRET_KEY=your_secret_key_here
-   ```
+```
+OPENAI_API_KEY=your_openai_key_here
+WORDNIK_API_KEY=your_wordnik_key_here
+GOOGLE_CLIENT_ID=your_google_client_id
+GOOGLE_CLIENT_SECRET=your_google_client_secret
+SECRET_KEY=your_secret_key_here
+```
 
-4. **Run the application**
-   ```bash
-   python main.py
-   ```
+**Run**
 
-5. **Open your browser**
-   Navigate to `http://localhost:8000`
+```bash
+python main.py
+```
 
-## 🎮 How to Play
+Open `http://localhost:8000`.
 
-1. **Choose your mode**: Hard (use both theme and emotion) or Easy (pick one)
-2. **Optional**: Enable word bank for an extra challenge
-3. **Write your poem**: Use the rich text editor to craft your masterpiece
-4. **Submit**: Get AI analysis and scoring
-5. **View results**: See how well you captured the theme and emotion
+## How to play
 
-## 🏗️ Project Structure
+1. Pick hard or easy (and theme vs emotion focus on easy).
+2. Turn word bank on or off.
+3. Write and submit.
+4. Read scores and feedback.
+
+## Layout
 
 ```
 stanzle/
-├── public/                 # Frontend files
-│   ├── css/              # Stylesheets
-│   ├── js/               # JavaScript files
-│   ├── index.html        # Main game page
-│   ├── unlimited.html    # Unlimited mode page
-│   ├── profile.html      # User profile page
-│   └── landing.html      # Landing page
-├── templates/            # Flask templates
-├── src/
-│   └── backend/          # Backend services
-│       └── services/     # Business logic
-├── data/                 # Data storage
-├── scripts/              # Utility scripts
-├── main.py              # Flask application
-├── requirements.txt     # Python dependencies
-└── README.md           # This file
+├── public/              # Frontend (SPA build, static assets)
+├── templates/           # Flask templates (if used)
+├── src/backend/services/# Business logic
+├── data/                # JSON data files
+├── scripts/
+├── main.py              # Flask app
+├── requirements.txt
+└── README.md
 ```
 
-## 🔧 Configuration
+## Environment
 
-### API Keys Required
+| Variable | Purpose | Required |
+|----------|---------|----------|
+| `OPENAI_API_KEY` | Analysis and scoring | Yes |
+| `WORDNIK_API_KEY` | Random words | No |
+| `GOOGLE_CLIENT_ID` | Google login | No |
+| `GOOGLE_CLIENT_SECRET` | Google login | No |
+| `SECRET_KEY` | Sessions | Yes |
 
-- **OpenAI API**: For poem analysis and scoring
-- **Wordnik API**: For random word generation (optional)
-- **Google OAuth**: For social login (optional)
+## Modes
 
-### Environment Variables
+**Daily**
 
-| Variable | Description | Required |
-|----------|-------------|----------|
-| `OPENAI_API_KEY` | OpenAI API key for AI analysis | Yes |
-| `WORDNIK_API_KEY` | Wordnik API key for word bank | No |
-| `GOOGLE_CLIENT_ID` | Google OAuth client ID | No |
-| `GOOGLE_CLIENT_SECRET` | Google OAuth client secret | No |
-| `SECRET_KEY` | Flask secret key for sessions | Yes |
+- One official submission per day (logged in).
+- Same prompt for all players that calendar day.
 
-## 🎯 Game Modes
+**Unlimited**
 
-### Daily Challenge
-- One challenge per day
-- Same theme/emotion for all players
-- One submission per day
-- Track your progress over time
+- New challenge when you refresh.
+- No daily submit limit.
 
-### Unlimited Mode
-- Practice with unlimited challenges
-- New challenge on each page refresh
-- No submission limits
-- Perfect for honing your skills
+## Scoring (typical split)
 
-## 📊 Scoring System
+**Hard (100 total)**
 
-### Hard Mode (100 points total)
-- **Theme Accuracy**: 40 points
-- **Emotion Accuracy**: 40 points  
-- **Creativity**: 20 points
+- Theme and emotion each part of the score
+- Creativity included
 
-### Easy Mode (100 points total)
-- **Chosen Focus** (theme OR emotion): 80 points
-- **Creativity**: 20 points
+**Easy (100 total)**
 
-## 🛠️ Development
+- Main weight on the side you chose (theme or emotion)
+- Creativity included
 
-### Running in Development Mode
+Exact weights follow the live `/api/score` behavior.
+
+## Development
+
 ```bash
 export FLASK_ENV=development
 python main.py
 ```
 
-### Database Management
-The app uses JSON files for data storage:
-- `data/users.json`: User accounts and submission history
-- `data/sessions.json`: Active user sessions
-- `data/daily_challenges.json`: Challenge archive
+**Data files**
 
-### Adding New Features
-1. Backend: Add routes in `main.py` and services in `src/backend/services/`
-2. Frontend: Update HTML templates and JavaScript files
-3. Styling: Modify CSS files in `public/css/`
+- `data/users.json` – users and history
+- `data/sessions.json` – sessions
+- `data/daily_challenges.json` – challenge archive
 
-## 🤝 Contributing
+**Where to change things**
 
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
+- Routes: `main.py`
+- Services: `src/backend/services/`
+- New React UI: `updatedDesign/` (build copies into `public/`)
 
-## 📝 License
+## Contributing
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+Fork, branch, commit, push, open a pull request.
 
-## 🙏 Acknowledgments
+## License
 
-- OpenAI for AI analysis capabilities
-- Wordnik for word bank functionality
-- Google for OAuth integration
-- Flask community for the web framework
+MIT. See `LICENSE` if present.
 
-## 📞 Support
+## Credits
 
-If you encounter any issues or have questions, please open an issue on GitHub.
+OpenAI, Wordnik (optional), Google OAuth, Flask.
 
----
+## Support
 
-**Happy Poetry Writing! 🎭✨**
+Open an issue on GitHub.

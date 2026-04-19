@@ -1,11 +1,20 @@
+# Stanzle web UI (Vite + React)
 
-  # Redesign Stanzle Website
+Source for the redesigned Stanzle front end. Original design reference: [Figma – Redesign Stanzle Website](https://www.figma.com/design/yeSjN0GyWGHd2E73inejpx/Redesign-Stanzle-Website).
 
-  This is a code bundle for Redesign Stanzle Website. The original project is available at https://www.figma.com/design/yeSjN0GyWGHd2E73inejpx/Redesign-Stanzle-Website.
+## Commands
 
-  ## Running the code
+```bash
+npm i
+npm run dev
+```
 
-  Run `npm i` to install the dependencies.
+Development server URL is printed in the terminal (often `http://localhost:5173`).
 
-  Run `npm run dev` to start the development server.
-  
+Production build (from this folder):
+
+```bash
+npm run build
+```
+
+Output is in `dist/`. The Flask app’s deploy script usually copies `dist/` into `../public/`.

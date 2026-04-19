@@ -1,12 +1,11 @@
-# 🚀 Stanzle Deployment Guide
+# Deployment
 
-## Quick Deploy Options
+## Railway
 
-### Option 1: Railway (Recommended - Easiest)
+1. Create an account at [railway.app](https://railway.app).
+2. Connect the GitHub repo.
+3. Set variables in the project dashboard:
 
-1. **Sign up at [Railway.app](https://railway.app)**
-2. **Connect your GitHub repository**
-3. **Set environment variables in Railway dashboard:**
    ```
    OPENAI_API_KEY=your_openai_key
    WORDNIK_API_KEY=your_wordnik_key
@@ -14,58 +13,57 @@
    GOOGLE_CLIENT_SECRET=your_google_client_secret
    SECRET_KEY=your_secret_key
    ```
-4. **Deploy!** Railway will automatically build and deploy your app.
 
-### Custom domain (always show `stanzle.com`, not `*.railway.app`)
+4. Deploy; Railway builds and runs the app from the repo.
 
-1. In **Railway** → your service → **Settings** → **Networking**, add **`stanzle.com`** (and **`www.stanzle.com`** if you use it). Point DNS at the targets Railway shows (CNAME / A records).
-2. In **Google Cloud Console** → OAuth client → **Authorized redirect URIs**, add exactly:
+**Custom domain (e.g. stanzle.com)**
+
+1. Railway: service → Settings → Networking → add `stanzle.com` (and `www` if needed). Point DNS as Railway shows.
+2. Google Cloud Console → OAuth client → Authorized redirect URIs:
    - `https://stanzle.com/login/google/authorized`
-   - (and `https://www.stanzle.com/login/google/authorized` if you use `www`)
-3. Set Railway **environment variables** (pick one approach for the callback URL):
-   - **Recommended:** `GOOGLE_REDIRECT_URI=https://stanzle.com/login/google/authorized`  
-   - **Or:** `PUBLIC_APP_URL=https://stanzle.com` (no trailing slash) — the app builds the same callback path automatically.
-4. Set **`CORS_ORIGINS`** to include your real origins, e.g. `https://stanzle.com,https://www.stanzle.com` (comma-separated, no spaces if possible).
-5. If you use **`FRONTEND_URL`** for OAuth redirects, set it to **`https://stanzle.com`** (same as the site users open).
-6. **Frontend build:** Do **not** bake the Railway URL into the SPA. Leave **`VITE_API_BASE` unset** for same-host deploys so “Continue with Google” stays on `stanzle.com`. If you must set it, use **`https://stanzle.com`**, not `*.railway.app`.
+   - Add `www` variant if you use it.
+3. Env (pick one style for the callback):
+   - `GOOGLE_REDIRECT_URI=https://stanzle.com/login/google/authorized`, or
+   - `PUBLIC_APP_URL=https://stanzle.com` (no trailing slash) if the app builds the path from that.
+4. `CORS_ORIGINS` should list real origins, e.g. `https://stanzle.com,https://www.stanzle.com`.
+5. If you use `FRONTEND_URL` for OAuth, set it to the URL users open in the browser.
+6. For same-host SPA, leave `VITE_API_BASE` unset in production, or set it to your public `https://` origin (not `*.railway.app`) if the API is separate.
 
-The app enables **ProxyFix** so `Host` / `X-Forwarded-*` from Railway match your custom domain when building OAuth URLs.
+The app uses ProxyFix so `Host` / `X-Forwarded-*` from the platform match your public domain for OAuth.
 
-**Sessions and data:** Login uses `data/sessions.json` and `data/users.json` on disk. On a default Railway service the filesystem is **ephemeral**—each **redeploy** can wipe those files, so old browser tokens stop matching the server and `/api/auth/verify` returns **401** until the user signs in again. To keep accounts across deploys, attach a **persistent volume** and mount it at your app’s `data/` directory (or move sessions to Redis/Postgres later).
+**Persistence**
 
-**Cost:** Free tier available, then $5/month
+Sessions and users live in `data/sessions.json` and `data/users.json`. On Railway the default disk is often ephemeral: redeploys can wipe `data/`. Use a persistent volume mounted at `data/`, or move sessions to Redis/Postgres later.
 
-### Option 2: Render
+**Cost**
 
-1. **Sign up at [Render.com](https://render.com)**
-2. **Create new Web Service**
-3. **Connect your GitHub repository**
-4. **Configure:**
-   - Build Command: `pip install -r requirements.txt`
-   - Start Command: `python main.py`
-5. **Set environment variables in Render dashboard**
-6. **Deploy!**
+Free tier exists; paid usage varies.
 
-**Cost:** Free tier available
+## Render
 
-### Option 3: Heroku
+1. [render.com](https://render.com) → New Web Service.
+2. Connect the repo.
+3. Build: `pip install -r requirements.txt`
+4. Start: `python main.py`
+5. Set the same env vars as above.
+6. Deploy.
 
-1. **Install Heroku CLI**
-2. **Login:** `heroku login`
-3. **Create app:** `heroku create your-app-name`
-4. **Set environment variables:**
-   ```bash
-   heroku config:set OPENAI_API_KEY=your_key
-   heroku config:set WORDNIK_API_KEY=your_key
-   heroku config:set GOOGLE_CLIENT_ID=your_id
-   heroku config:set GOOGLE_CLIENT_SECRET=your_secret
-   heroku config:set SECRET_KEY=your_secret
-   ```
-5. **Deploy:** `git push heroku main`
+## Heroku
 
-**Cost:** $7/month minimum
+```bash
+heroku login
+heroku create your-app-name
+heroku config:set OPENAI_API_KEY=...
+heroku config:set WORDNIK_API_KEY=...
+heroku config:set GOOGLE_CLIENT_ID=...
+heroku config:set GOOGLE_CLIENT_SECRET=...
+heroku config:set SECRET_KEY=...
+git push heroku main
+```
 
-## Environment Variables Required
+Heroku pricing is plan-dependent.
+
+## Environment summary
 
 ```bash
 # Required
@@ -73,40 +71,38 @@ OPENAI_API_KEY=sk-proj-...
 WORDNIK_API_KEY=your_wordnik_key
 SECRET_KEY=your_secret_key
 
-# Optional (for Google OAuth)
-GOOGLE_CLIENT_ID=your_google_client_id
-GOOGLE_CLIENT_SECRET=your_google_client_secret
+# Optional (Google)
+GOOGLE_CLIENT_ID=...
+GOOGLE_CLIENT_SECRET=...
 
-# Server settings
+# Server
 PORT=8000
 DEBUG=False
 HOST=0.0.0.0
 ```
 
-## Post-Deployment Steps
+## After deploy
 
-1. **Update Google OAuth redirect URI** to your production domain
-2. **Test all functionality** (login, poem submission, AI analysis)
-3. **Set up monitoring** (optional but recommended)
-4. **Configure custom domain** (optional)
+1. OAuth redirect URIs match production HTTPS URLs.
+2. Smoke-test login, daily play, and scoring.
+3. Optional: uptime or error monitoring.
 
-## Security Checklist
+## Security checklist
 
-- [ ] Environment variables are set securely
-- [ ] DEBUG=False in production
-- [ ] HTTPS is enabled (automatic on most platforms)
-- [ ] Google OAuth redirect URI updated
-- [ ] API keys are not exposed in code
+- [ ] Secrets only in the host env, not in git
+- [ ] `DEBUG=False` in production
+- [ ] HTTPS (usually automatic on these hosts)
+- [ ] OAuth redirect URIs exact match
+- [ ] API keys not hard-coded
 
 ## Troubleshooting
 
-### Common Issues:
-- **Port binding errors:** Make sure your app uses `os.getenv('PORT', 8000)`
-- **Static files not loading:** Check that `public/` folder is included
-- **Database errors:** JSON files will be created automatically
-- **CORS errors:** Update CORS_ORIGINS with your domain
+- **Port**: App should read `PORT` from the environment (default 8000 locally).
+- **Statics**: Ensure `public/` is present in the deployed artifact.
+- **JSON data**: Files are created on first use if missing.
+- **CORS**: Set `CORS_ORIGINS` to your real frontend origin(s).
 
-### Logs:
-- Railway: View logs in dashboard
-- Render: View logs in dashboard  
+**Logs**
+
+- Railway / Render: dashboard logs
 - Heroku: `heroku logs --tail`
